@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: supabase/postgres:15.1.0.123
+    container_name: ayudamapa-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+
+  studio:
+    image: supabase/studio:latest
+    container_name: ayudamapa-studio
+    ports:
+      - "5555:5555"
+    environment:
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      STUDIO_DEFAULT_SCHEMA: public
+
+volumes:
+  postgres_data:

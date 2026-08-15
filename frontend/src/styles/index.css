@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl;
+  }
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors shadow-lg;
+  }
+  .btn-success {
+    @apply bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-lg;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow;
+  }
+  
+  .badge {
+    @apply px-3 py-1 rounded-full text-xs font-semibold inline-block;
+  }
+  .badge-critical {
+    @apply badge bg-red-600 text-white animate-pulse;
+  }
+  .badge-high {
+    @apply badge bg-orange-500 text-white;
+  }
+  .badge-medium {
+    @apply badge bg-yellow-500 text-white;
+  }
+  .badge-low {
+    @apply badge bg-green-500 text-white;
+  }
+  .badge-covered {
+    @apply badge bg-gray-500 text-white;
+  }
+  .badge-verified {
+    @apply badge bg-green-600 text-white;
+  }
+  .badge-pending {
+    @apply badge bg-yellow-500 text-white;
+  }
+}
+
+/* Mapbox custom styles */
+.mapboxgl-popup-content {
+  @apply rounded-xl shadow-xl p-4 max-w-sm;
+}
+
+.mapboxgl-popup-close-button {
+  @apply text-2xl text-gray-500 hover:text-gray-700;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Loading animation */
+@keyframes pulse-ring {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.5s ease-in-out infinite;
+}
