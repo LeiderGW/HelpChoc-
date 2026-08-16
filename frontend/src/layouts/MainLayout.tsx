@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { supabaseConfigurado } from '../services/supabase';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -193,6 +194,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         )}
       </header>
+
+      {/* Aviso de configuración. Sin las variables de Supabase la app carga
+          pero no trae datos, y sin este cartel el síntoma es una pantalla
+          llena de ceros sin explicación. */}
+      {!supabaseConfigurado && (
+        <div className="fixed inset-x-0 top-16 z-[60] bg-amber-50 px-4 py-2 text-center text-sm text-amber-900 shadow-sm">
+          <strong className="font-semibold">Sin conexión a la base de datos.</strong> Faltan
+          <code className="mx-1 rounded bg-amber-100 px-1 font-mono text-xs">VITE_SUPABASE_URL</code>
+          y
+          <code className="mx-1 rounded bg-amber-100 px-1 font-mono text-xs">VITE_SUPABASE_ANON_KEY</code>
+          en el entorno del despliegue.
+        </div>
+      )}
 
       {/* Main Content */}
       <main className={isFullBleed ? 'h-screen pt-16' : 'pt-16'}>
