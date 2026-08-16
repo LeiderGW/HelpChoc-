@@ -1,0 +1,373 @@
+/* Estilos del mapa de ayuda: lienzo, marcadores y popups.
+   Va aparte de Tailwind porque Leaflet inyecta este DOM por su cuenta
+   (divIcon, popup): no hay JSX donde colgar clases utilitarias. */
+
+/* ─── Lienzo ────────────────────────────────────────────────────────────── */
+
+.leaflet-container {
+  font-family: 'Inter', system-ui, sans-serif;
+  /* Arena tenue, el mismo tono de la máscara: mientras cargan las teselas se
+     ve un lienzo continuo y no el blanco puro que hace parecer roto el mapa. */
+  background: #f2f0ea;
+  outline: none;
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(6px);
+  font-size: 10px !important;
+  color: #6b7280 !important;
+  padding: 2px 8px !important;
+  border-radius: 6px 0 0 0;
+}
+
+.leaflet-control-scale-line {
+  border-color: rgba(55, 65, 81, 0.5) !important;
+  color: #374151 !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(6px);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Controles nativos de zoom: usamos MapControls en su lugar. */
+.leaflet-control-zoom {
+  display: none;
+}
+
+/* ─── Municipios ────────────────────────────────────────────────────────── */
+
+.municipio-path {
+  transition: fill-opacity 140ms ease, stroke-width 140ms ease;
+}
+
+.municipio-path:hover {
+  cursor: pointer;
+}
+
+/* ─── Ciudades de referencia ────────────────────────────────────────────────
+   Fuera del Chocó y sin color de severidad: explican el margen del mapa sin
+   competir con el coropleto. El marcador mide 0×0 y la etiqueta se coloca a un
+   lado u otro del punto según de qué lado del departamento caiga. */
+
+.ciudad-ref {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.ciudad-ref--derecha {
+  left: 6px;
+}
+
+.ciudad-ref--izquierda {
+  right: 6px;
+  flex-direction: row-reverse;
+}
+
+.ciudad-ref__punto {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #8a8377;
+}
+
+.ciudad-ref__texto {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6f6960;
+  text-shadow: 0 0 3px #f2f0ea, 0 0 3px #f2f0ea, 0 0 5px #f2f0ea;
+}
+
+.ciudad-ref__texto b {
+  font-weight: 700;
+  color: #8c2a15;
+}
+
+/* Al acercarse dejan de aportar: el margen se llena de detalle real. */
+.leaflet-container[data-detalle='completo'] .ciudad-ref {
+  display: none;
+}
+
+/* ─── Etiquetas de municipio ────────────────────────────────────────────── */
+
+.etiqueta-municipio {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #44403c;
+  /* Halo blanco alrededor del texto: es lo que mantiene legible una etiqueta
+     encima de un relleno oscuro sin ponerle una caja detrás. */
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 6px rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.etiqueta-municipio::before {
+  display: none !important; /* quita la flechita del tooltip */
+}
+
+.etiqueta-municipio--critica,
+.etiqueta-municipio--alta {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1c1917;
+}
+
+/* Cuántos nombres caben sin pisarse depende del zoom. `data-detalle` lo fija
+   el mapa (ver ZoomExpuesto): a vista de departamento solo los municipios más
+   golpeados, y al acercarse van apareciendo los demás. */
+.leaflet-container[data-detalle='minimo'] .etiqueta-municipio--media,
+.leaflet-container[data-detalle='minimo'] .etiqueta-municipio--baja,
+.leaflet-container[data-detalle='medio'] .etiqueta-municipio--baja {
+  display: none;
+}
+
+/* Tooltip al pasar el cursor, para los municipios sin cifra publicada. */
+.tooltip-municipio {
+  border: none !important;
+  border-radius: 6px !important;
+  background: rgba(28, 25, 23, 0.9) !important;
+  color: #fff !important;
+  font-size: 11px !important;
+  font-weight: 500;
+  padding: 3px 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+.tooltip-municipio::before {
+  display: none !important;
+}
+
+/* ─── Marcadores ────────────────────────────────────────────────────────────
+   La forma dice qué es; el color, cuánto urge. Ver markerIcons.ts.
+     ○ círculo  → necesidad        ▢ insignia → oferta
+     ◇ gota     → infraestructura  ◎ anillos  → sismo                        */
+
+.marcador-mapa {
+  background: none !important;
+  border: none !important;
+}
+
+.mk {
+  display: grid;
+  place-items: center;
+  background: var(--c);
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.mk svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Necesidad */
+.mk--circulo {
+  border-radius: 50%;
+}
+
+/* Oferta: esquinas redondeadas, claramente no un círculo */
+.mk--insignia {
+  border-radius: 7px;
+}
+
+/* Infraestructura: gota clásica de mapa, con el glifo sin rotar */
+.mk--gota {
+  border-radius: 50% 50% 50% 3px;
+  transform: rotate(-45deg);
+}
+
+.mk--gota svg {
+  transform: rotate(45deg);
+}
+
+.mk:hover,
+.mk--activo {
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.45);
+}
+
+.mk--circulo:hover,
+.mk--insignia:hover,
+.mk--circulo.mk--activo,
+.mk--insignia.mk--activo {
+  transform: scale(1.15);
+}
+
+.mk--gota:hover,
+.mk--gota.mk--activo {
+  transform: rotate(-45deg) scale(1.15);
+}
+
+.mk--pulso {
+  animation: mk-pulso 1.8s ease-in-out infinite;
+}
+
+@keyframes mk-pulso {
+  0%,
+  100% {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35), 0 0 0 0 rgba(220, 38, 38, 0.45);
+  }
+  60% {
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.35), 0 0 0 9px rgba(220, 38, 38, 0);
+  }
+}
+
+/* ─── Agrupaciones ──────────────────────────────────────────────────────── */
+
+.mk-grupo {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--c);
+  border: 2.5px solid #fff;
+  /* El halo del mismo color dice "aquí hay varios" sin necesidad de leer el
+     número, igual que la sombra apilada de un montón de fichas. */
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--c) 28%, transparent),
+    0 2px 8px rgba(15, 23, 42, 0.35);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 160ms ease;
+}
+
+.mk-grupo:hover {
+  transform: scale(1.12);
+}
+
+/* ─── Epicentro y réplicas ──────────────────────────────────────────────── */
+
+.mk-epicentro {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.mk-epicentro__nucleo {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  border-radius: 50%;
+  background: var(--c);
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 10px rgba(127, 29, 29, 0.55);
+  cursor: pointer;
+}
+
+.mk-epicentro__nucleo svg {
+  width: 58%;
+  height: 58%;
+  fill: #fff;
+  stroke: none;
+}
+
+.mk-epicentro__onda {
+  position: absolute;
+  inset: 50%;
+  width: calc(var(--r) * 2);
+  height: calc(var(--r) * 2);
+  margin: calc(var(--r) * -1) 0 0 calc(var(--r) * -1);
+  border-radius: 50%;
+  border: 2px solid var(--c);
+  opacity: 0.65;
+  animation: mk-onda 3.2s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+  pointer-events: none;
+}
+
+.mk-epicentro__onda--2 {
+  animation-delay: 1.6s;
+}
+
+@keyframes mk-onda {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+.mk-replica {
+  border-radius: 50%;
+  background: rgba(179, 57, 31, 0.18);
+  border: 2px solid var(--c);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: transform 160ms ease;
+}
+
+.mk-replica:hover,
+.mk-replica.mk--activo {
+  transform: scale(1.2);
+}
+
+/* La animación es decorativa: la información ya está en el color, el tamaño
+   y la forma. Quien pidió menos movimiento no pierde nada. */
+@media (prefers-reduced-motion: reduce) {
+  .mk--pulso,
+  .mk-epicentro__onda {
+    animation: none;
+  }
+  .mk-epicentro__onda {
+    opacity: 0.3;
+  }
+}
+
+/* ─── Popups ────────────────────────────────────────────────────────────── */
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.18);
+  border: 1px solid #e5e7eb;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+  min-width: 220px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: none;
+  border: 1px solid #e5e7eb;
+}
+
+.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  color: #9ca3af !important;
+}
+
+.popup-help {
+  padding: 12px 14px;
+  max-width: 300px;
+}

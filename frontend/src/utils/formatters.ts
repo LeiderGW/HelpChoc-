@@ -48,7 +48,7 @@ export const formatRelativeTime = (date: string | Date): string => {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
-  const rtf = new Intl.RelativeTimeFormatter('es', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
 
   if (years > 0) return rtf.format(-years, 'year');
   if (months > 0) return rtf.format(-months, 'month');

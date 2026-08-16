@@ -50,6 +50,8 @@ export interface Need {
   municipality?: Municipality;
   department?: Department;
   reporter?: User;
+  /** Quien verificó la necesidad, cuando la consulta lo trae unido. */
+  verified_by_user?: User;
 }
 
 // Aid Offer types
@@ -117,6 +119,29 @@ export interface CollectionCenter {
   updated_at: string;
   municipality?: Municipality;
   department?: Department;
+  // Procedencia. La traen los puntos publicados por la Gobernación, la
+  // Defensoría o la prensa; los registrados desde la app la dejan vacía.
+  external_id?: string | null;
+  source?: string | null;
+  location_note?: string | null;
+  location_precision?: 'confirmada' | 'aproximada' | null;
+}
+
+/** Epicentro y réplicas. Tabla aparte: no se les lleva ayuda, son contexto. */
+export interface SeismicEvent {
+  id: string;
+  external_id: string;
+  name: string;
+  event_type: 'principal' | 'replica';
+  magnitude: number;
+  latitude: number;
+  longitude: number;
+  occurred_on: string;
+  local_time?: string | null;
+  depth_km?: number | null;
+  location_precision: 'confirmada' | 'aproximada';
+  location_note?: string | null;
+  source: string;
 }
 
 // Organization types

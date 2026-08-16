@@ -17,12 +17,15 @@ export { default as MobileNav } from './layout/MobileNav';
 export { default as MainLayout } from './layout/MainLayout';
 
 // Map components
-export { default as MapComponent } from './map/MapComponent';
 export { default as MapFilters } from './map/MapFilters';
+export { default as MapControls } from './map/MapControls';
 export { default as MarkerPopup } from './map/MarkerPopup';
 
 // Need components
-export { default as NeedCard } from './needs/NeedCard';
+// OJO: needs/NeedCard.tsx no contiene un componente sino una copia de los
+// esquemas de zod de lib/validations.ts, así que no tiene export por defecto
+// que reexportar. Se deja fuera del barril hasta que el archivo sea lo que
+// dice su nombre.
 export { default as NeedFilters } from './needs/NeedFilters';
 export { default as NeedForm } from './needs/NeedForm';
 export { default as NeedList } from './needs/NeedList';

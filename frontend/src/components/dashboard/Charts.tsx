@@ -76,7 +76,11 @@ const Charts: React.FC<ChartsProps> = ({
           <PieChart>
             <Pie
               data={chartData}
-              dataKey={data.datasets[0]?.data?.[0] ? data.datasets[0].data : []}
+              // `chartData` son objetos {name, [label]: valor}, así que la
+              // clave del dato es el nombre de la serie. Antes se pasaba el
+              // array de valores, que no es una clave: recharts no encontraba
+              // el campo y la torta salía vacía.
+              dataKey={data.datasets[0]?.label ?? 'value'}
               nameKey="name"
               cx="50%"
               cy="50%"
@@ -138,13 +142,19 @@ const Charts: React.FC<ChartsProps> = ({
     }
   };
 
+  const grafico = renderChart();
+
   return (
     <div className={`bg-white rounded-xl shadow-md p-6 ${className}`}>
       {title && <h3 className="font-semibold text-gray-800 mb-4">{title}</h3>}
+      {/* `renderChart` devuelve null si el tipo no se reconoce, y
+          ResponsiveContainer exige un elemento: con null lanzaba en runtime. */}
       <div style={{ height }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {renderChart()}
-        </ResponsiveContainer>
+        {grafico && (
+          <ResponsiveContainer width="100%" height="100%">
+            {grafico}
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

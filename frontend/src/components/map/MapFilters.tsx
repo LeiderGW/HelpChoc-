@@ -31,15 +31,13 @@ const MapFilters: React.FC<MapFiltersProps> = ({
   });
 
   const handleFilterChange = (key: keyof MapFiltersState, value: string) => {
-    setFilters(prev => {
-      const current = prev[key];
-      const updated = current.includes(value)
-        ? current.filter(v => v !== value)
-        : [...current, value];
-      const newFilters = { ...prev, [key]: updated };
-      onFilterChange(newFilters);
-      return newFilters;
-    });
+    const current = filters[key];
+    const updated = current.includes(value)
+      ? current.filter(v => v !== value)
+      : [...current, value];
+    const newFilters = { ...filters, [key]: updated };
+    setFilters(newFilters);
+    onFilterChange(newFilters);
   };
 
   const handleClear = () => {
@@ -65,7 +63,16 @@ const MapFilters: React.FC<MapFiltersProps> = ({
     { value: 'high', label: 'Alta', color: 'bg-orange-500' },
     { value: 'medium', label: 'Media', color: 'bg-yellow-500' },
     { value: 'low', label: 'Baja', color: 'bg-green-500' },
+    { value: 'covered', label: 'Cubierta', color: 'bg-gray-500' },
   ];
+
+  const selectedDepartmentIds = departments
+    .filter(d => filters.departments.includes(d.name))
+    .map(d => d.id);
+
+  const visibleMunicipalities = selectedDepartmentIds.length
+    ? municipalities.filter(m => selectedDepartmentIds.includes(m.department_id))
+    : [];
 
   return (
     <div className="bg-white rounded-xl shadow-lg">
@@ -157,6 +164,30 @@ const MapFilters: React.FC<MapFiltersProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Municipalities */}
+          {visibleMunicipalities.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Municipios
+              </label>
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                {visibleMunicipalities.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => handleFilterChange('municipalities', m.name)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      filters.municipalities.includes(m.name)
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-2 border-t border-gray-100">

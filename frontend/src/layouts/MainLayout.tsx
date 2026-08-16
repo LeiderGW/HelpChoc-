@@ -43,8 +43,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // El mapa ocupa la ventana entera y gestiona su propio desplazamiento por
+  // columnas. Si la página además puede desplazarse, la rueda del ratón mueve
+  // el documento en vez del panel lateral y el pie de página empuja el mapa
+  // fuera de la pantalla.
+  const isFullBleed = location.pathname === '/mapa';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={isFullBleed ? 'h-screen overflow-hidden bg-gray-50' : 'min-h-screen bg-gray-50'}>
       {/* Header */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? 'bg-white shadow-md' : 'bg-white/95 backdrop-blur-sm'
@@ -189,11 +195,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="pt-16">
+      <main className={isFullBleed ? 'h-screen pt-16' : 'pt-16'}>
         {children}
       </main>
 
       {/* Footer */}
+      {!isFullBleed && (
       <footer className="bg-gray-900 text-white py-8 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -236,6 +243,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 };

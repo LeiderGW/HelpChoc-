@@ -25,7 +25,8 @@ const needSchema = z.object({
 type NeedFormData = z.infer<typeof needSchema>;
 
 interface NeedFormProps {
-  initialData?: Partial<NeedFormData>;
+  /** Al editar llega también el id de la necesidad, que no es parte del formulario. */
+  initialData?: Partial<NeedFormData> & { id?: string };
   onSuccess?: () => void;
   onCancel?: () => void;
   isEditing?: boolean;

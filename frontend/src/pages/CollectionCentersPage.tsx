@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Clock, CheckCircle, XCircle, AlertCircle, Plus, Filter, Search } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { CollectionCenter } from '../types';
@@ -14,6 +14,7 @@ const CollectionCentersPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const { isAuthenticated, isAdmin, isOrganization } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCenters();
@@ -228,12 +229,16 @@ const CollectionCentersPage: React.FC = () => {
                     <span className="text-xs text-gray-400">
                       {getTypeLabel(center.type)}
                     </span>
+                    {/* El mapa recibe el id del punto, no unas coordenadas
+                        sueltas: así se comporta igual que pulsar el marcador
+                        allí —acerca, abre la ficha y guarda la vista para
+                        poder volver— en vez de dejar el mapa centrado en un
+                        sitio sin decir en qué. Navegación de router, no
+                        window.location: recargar la app entera perdía el
+                        estado y tardaba lo suyo. */}
                     <Button
                       size="sm"
-                      onClick={() => {
-                        toast.info('Ver en mapa - Próximamente');
-                        window.location.href = `/mapa?lat=${center.latitude}&lng=${center.longitude}&zoom=15`;
-                      }}
+                      onClick={() => navigate(`/mapa?punto=center-${center.id}`)}
                     >
                       Ver en mapa
                     </Button>
