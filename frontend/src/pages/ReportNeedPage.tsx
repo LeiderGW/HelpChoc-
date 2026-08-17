@@ -34,6 +34,9 @@ const ReportNeedPage: React.FC = () => {
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<NeedFormData>({
     resolver: zodResolver(needSchema),
     defaultValues: {
+      department: '',
+      municipality: '',
+      product: '',
       quantity_needed: 1,
       affected_people: 0,
     },
@@ -198,11 +201,10 @@ const ReportNeedPage: React.FC = () => {
                         key={cat.value}
                         type="button"
                         onClick={() => field.onChange(cat.value)}
-                        className={`p-3 rounded-xl border-2 text-center transition-all ${
-                          field.value === cat.value
+                        className={`p-3 rounded-xl border-2 text-center transition-all ${field.value === cat.value
                             ? 'border-blue-600 bg-blue-50 text-blue-700'
                             : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                        }`}
+                          }`}
                       >
                         <div className="text-2xl">{cat.icon}</div>
                         <div className="text-xs mt-1">{cat.label}</div>

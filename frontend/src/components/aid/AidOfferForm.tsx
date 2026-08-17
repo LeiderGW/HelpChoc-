@@ -9,6 +9,13 @@ import Input from '../common/Input';
 import Select from '../common/Select';
 import { toast } from 'sonner';
 
+
+
+
+
+
+
+
 const offerSchema = z.object({
   product: z.string().min(2, 'Producto requerido (mínimo 2 caracteres)'),
   quantity: z.number().min(1, 'Cantidad debe ser mayor a 0'),
@@ -44,13 +51,17 @@ const AidOfferForm: React.FC<AidOfferFormProps> = ({
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<OfferFormData>({
     resolver: zodResolver(offerSchema),
     defaultValues: {
-     
+      department: '',
+      product: '',
+      contact_info: '',
       quantity: 1,
       need_id: needId || '',
       unit: 'unidades',
     },
   });
-  //  department: '',
+
+
+
 
   const watchedDepartment = watch('department');
   const watchedNeedId = watch('need_id');
@@ -120,7 +131,6 @@ const AidOfferForm: React.FC<AidOfferFormProps> = ({
   };
 
 
-  
   const onSubmit = async (data: OfferFormData) => {
     if (!user) {
       toast.error('Debes iniciar sesión para ofrecer ayuda');
@@ -132,23 +142,60 @@ const AidOfferForm: React.FC<AidOfferFormProps> = ({
     try {
       let locationId = null;
 
+      // Obtener ubicación actual del usuario
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          }
+        );
+      });
+
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+
+      console.log('📍 Ubicación obtenida:', {
+        latitude,
+        longitude,
+      });
+
+      alert(`Latitud: ${latitude}\nLongitud: ${longitude}`);
+
+
+
       if (data.municipality) {
-        const { data: municipalityData } = await supabase
+        const { data: municipalityData, error: municipalityError } = await supabase
           .from('municipalities')
           .select('id, department_id')
           .eq('name', data.municipality)
           .single();
 
+        if (municipalityError) {
+          throw municipalityError;
+        }
+
+
         if (municipalityData) {
-          const { data: locationData } = await supabase
+          const { data: locationData, error: locationError } = await supabase
             .from('locations')
             .insert([
               {
                 municipality_id: municipalityData.id,
+                latitude: latitude,
+                longitude: longitude,
               },
             ])
             .select()
             .single();
+
+          if (locationError) {
+            throw locationError;
+          }
+
           if (locationData) {
             locationId = locationData.id;
           }
@@ -177,13 +224,97 @@ const AidOfferForm: React.FC<AidOfferFormProps> = ({
 
       toast.success('Ayuda ofrecida exitosamente');
       onSuccess?.();
+
     } catch (error: any) {
       console.error('Error offering help:', error);
-      toast.error(error.message || 'Error al ofrecer ayuda');
+
+      if (error?.code === 1) {
+        toast.error('Debes permitir el acceso a tu ubicación para ofrecer ayuda');
+      } else if (error?.code === 2) {
+        toast.error('No fue posible obtener tu ubicación');
+      } else if (error?.code === 3) {
+        toast.error('La solicitud de ubicación tardó demasiado');
+      } else {
+        toast.error(error.message || 'Error al ofrecer ayuda');
+      }
+
     } finally {
       setLoading(false);
     }
   };
+
+
+
+
+
+
+
+
+
+  
+  // const onSubmit = async (data: OfferFormData) => {
+  //   if (!user) {
+  //     toast.error('Debes iniciar sesión para ofrecer ayuda');
+  //     return;
+  //   }
+
+  //   setLoading(true);
+
+  //   try {
+  //     let locationId = null;
+
+  //     if (data.municipality) {
+  //       const { data: municipalityData } = await supabase
+  //         .from('municipalities')
+  //         .select('id, department_id')
+  //         .eq('name', data.municipality)
+  //         .single();
+
+  //       if (municipalityData) {
+  //         const { data: locationData } = await supabase
+  //           .from('locations')
+  //           .insert([
+  //             {
+  //               municipality_id: municipalityData.id,
+  //             },
+  //           ])
+  //           .select()
+  //           .single();
+  //         if (locationData) {
+  //           locationId = locationData.id;
+  //         }
+  //       }
+  //     }
+
+  //     const offerData = {
+  //       product: data.product,
+  //       quantity: data.quantity,
+  //       unit: data.unit,
+  //       need_id: data.need_id || null,
+  //       user_id: user.id,
+  //       location_id: locationId,
+  //       availability_date: data.availability_date || null,
+  //       estimated_delivery_date: data.estimated_delivery_date || null,
+  //       contact_info: data.contact_info,
+  //       notes: data.notes || '',
+  //       status: 'available',
+  //     };
+
+  //     const { error } = await supabase
+  //       .from('aid_offers')
+  //       .insert([offerData]);
+
+  //     if (error) throw error;
+
+  //     toast.success('Ayuda ofrecida exitosamente');
+  //     onSuccess?.();
+  //   } catch (error: any) {
+  //     console.error('Error offering help:', error);
+  //     toast.error(error.message || 'Error al ofrecer ayuda');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const units = ['unidades', 'litros', 'kg', 'toneladas', 'paquetes', 'cajas', 'botellas', 'sacos', 'kits', 'otro'];
 

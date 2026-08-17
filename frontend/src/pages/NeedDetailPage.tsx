@@ -31,36 +31,61 @@ const NeedDetailPage: React.FC = () => {
     }
   }, [id]);
 
-  const fetchNeed = async (needId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('needs')
-        .select(`
-          *,
-          municipality:municipalities(name, department:departments(name)),
-          location:locations(*),
-          reporter:users(full_name, email, phone),
-          verified_by_user:users!needs_verified_by_fkey(full_name, email)
-        `)
-        .eq('id', needId)
-        .single();
+ 
+  
 
-      if (error) throw error;
-      
-      if (data) {
-        setNeed({
-          ...data,
-          quantity_pending: data.quantity_needed - data.quantity_received,
-          coverage_percentage: (data.quantity_received / data.quantity_needed) * 100,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching need:', error);
-      toast.error('Error al cargar la necesidad');
-    } finally {
-      setLoading(false);
+
+const fetchNeed = async (needId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('needs')
+      .select(`
+        *,
+        municipality:municipalities(
+          name,
+          department:departments(name)
+        ),
+        location:locations(*),
+        reporter:users!needs_reporter_id_fkey(
+          full_name,
+          email,
+          phone
+        ),
+        verified_by_user:users!needs_verified_by_fkey(
+          full_name,
+          email
+        )
+      `)
+      .eq('id', needId)
+      .single();
+
+    if (error) throw error;
+
+    if (data) {
+      setNeed({
+        ...data,
+        quantity_pending:
+          data.quantity_needed - data.quantity_received,
+        coverage_percentage:
+          (data.quantity_received / data.quantity_needed) * 100,
+      });
     }
-  };
+  } catch (error) {
+    console.error('Error fetching need:', error);
+    toast.error('Error al cargar la necesidad');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+
+
+
+
+
 
   const fetchHistory = async (needId: string) => {
     try {

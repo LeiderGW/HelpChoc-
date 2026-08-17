@@ -18,8 +18,10 @@ const offerSchema = z.object({
   availability_date: z.string().optional(),
   estimated_delivery_date: z.string().optional(),
   contact_info: z.string().min(5, 'Información de contacto requerida'),
+  address: z.string().min(5, 'Dirección requerida'),
   notes: z.string().optional(),
 });
+
 
 type OfferFormData = z.infer<typeof offerSchema>;
 
@@ -35,6 +37,13 @@ const OfferHelpPage: React.FC = () => {
   const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<OfferFormData>({
     resolver: zodResolver(offerSchema),
     defaultValues: {
+      department: '',
+      municipality: '',
+      product: '',
+      availability_date: '',
+      estimated_delivery_date: '',
+      contact_info: '',
+      notes: '',
       quantity: 1,
     },
   });
@@ -107,16 +116,80 @@ const OfferHelpPage: React.FC = () => {
     }
   };
 
+
+
+
+
+  // Al inicio del componente
+  useEffect(() => {
+    console.log('🔍 Verificando geolocalización:');
+    console.log('- Soporte:', !!navigator.geolocation);
+    console.log('- Permisos API:', !!navigator.permissions);
+
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then(result => {
+          console.log('- Estado permiso:', result.state);
+        })
+        .catch(err => {
+          console.error('- Error al consultar permisos:', err);
+        });
+    }
+  }, []);
+
+
+
   const onSubmit = async (data: OfferFormData) => {
+
     if (!user) {
       toast.error('Debes iniciar sesión para ofrecer ayuda');
       return;
     }
-
     setLoading(true);
+
 
     try {
       let locationId = null;
+
+
+      // Verificar si el navegador soporta geolocalización
+      if (!navigator.geolocation) {
+        toast.error('Tu navegador no soporta geolocalización');
+        setLoading(false);
+        return;
+      }
+
+      // Obtener ubicación con  manejo de errores
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            console.log('✅ Ubicación obtenida exitosamente');
+            resolve(pos);
+          },
+          (error) => {
+            console.error('❌ Error de geolocalización:', error);
+            reject(error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0,
+          }
+        );
+
+        // Timeout adicional por si la promesa se queda colgada
+        setTimeout(() => {
+          reject(new Error('La solicitud de ubicación tardó demasiado'));
+        }, 12000);
+      });
+
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+
+      console.log('📍 Ubicación obtenida:', { latitude, longitude });
+
+
+
 
       // If location provided, create location
       if (data.municipality) {
@@ -126,13 +199,17 @@ const OfferHelpPage: React.FC = () => {
           .eq('name', data.municipality)
           .single();
 
+
+
         if (municipalityData) {
           const { data: locationData } = await supabase
             .from('locations')
             .insert([
               {
                 municipality_id: municipalityData.id,
-                address: data.notes || '',
+                address: data.address || '',
+                latitude: latitude,
+                longitude: longitude,
               },
             ])
             .select()
@@ -142,6 +219,8 @@ const OfferHelpPage: React.FC = () => {
           }
         }
       }
+
+
 
       const offerData = {
         product: data.product,
@@ -206,7 +285,7 @@ const OfferHelpPage: React.FC = () => {
                     <option value="">Sin asociar (ofrezco ayuda general)</option>
                     {needs.map((need) => (
                       <option key={need.id} value={need.id}>
-                        {need.product} - {need.quantity_needed} {need.unit} 
+                        {need.product} - {need.quantity_needed} {need.unit}
                         {need.municipality ? ` (${need.municipality.name})` : ''}
                         {need.priority === 'critical' ? ' 🔴' : ''}
                       </option>
@@ -412,6 +491,52 @@ const OfferHelpPage: React.FC = () => {
                 <p className="mt-1 text-sm text-red-600">{errors.contact_info.message}</p>
               )}
             </div>
+
+
+            {/* Dirección */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                Dirección *
+              </label>
+
+              <Controller
+                name="address"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    id="address"
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Escribe la dirección"
+                  />
+                )}
+              />
+
+              {errors.address && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.address.message}
+                </p>
+              )}
+            </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             {/* Notes */}
             <div>
