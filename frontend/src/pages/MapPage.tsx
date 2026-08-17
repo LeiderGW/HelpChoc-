@@ -271,6 +271,34 @@ const MapPage: React.FC = () => {
   );
 
   /**
+   * Datos "de contexto" de cada municipio (subregión, extensión, distancia al
+   * epicentro) para la ficha de detalle. Salen del mismo GeoJSON que ya carga
+   * el coropleto — no hay que pedir nada nuevo — y la distancia se aproxima
+   * al centro de su caja envolvente: de sobra para un "a 119 km" en una
+   * tarjeta, no para navegación.
+   */
+  const metaMunicipios = useMemo(() => {
+    const mapa: Record<string, { subregion: string | null; areaKm2: number | null; distanciaEpicentroKm: number | null }> = {};
+    municipiosGeo?.features.forEach(f => {
+      const props = f.properties as unknown as PropsMunicipio | null;
+      if (!props?.MpCodigo) return;
+      const codigo = String(props.MpCodigo);
+      const indexado = municipiosIndexados.find(m => m.codigo === codigo);
+      let distanciaEpicentroKm: number | null = null;
+      if (indexado) {
+        const [oeste, sur, este, norte] = indexado.caja;
+        distanciaEpicentroKm = distanciaAlEpicentro((sur + norte) / 2, (oeste + este) / 2);
+      }
+      mapa[codigo] = {
+        subregion: props.Subregion,
+        areaKm2: props.AreaHa != null ? props.AreaHa / 100 : null,
+        distanciaEpicentroKm,
+      };
+    });
+    return mapa;
+  }, [municipiosGeo, municipiosIndexados]);
+
+  /**
    * Completa el municipio de cada marcador a partir de su coordenada.
    *
    * `municipality_id` viene en NULL en buena parte de los registros, así que
@@ -524,28 +552,18 @@ const MapPage: React.FC = () => {
       const nivel = getNivel(dato?.severidad);
       const seleccionado = codigo === municipioSeleccionado;
 
-      // El relleno tiene dos modos, y el disparador es la selección.
-      //
       // Sin nada seleccionado se pinta sólido: se están comparando 31
-      // municipios entre sí y el color ES la información, tiene que coincidir
-      // con la leyenda de un vistazo. En cuanto se entra en uno, la pregunta
-      // deja de ser "cuál está peor" y pasa a ser "cómo se llega y qué hay
-      // ahí" — así que la capa se retira a un velo y deja ver calles, ríos y
-      // los marcadores. Al deseleccionar vuelve sola.
-      const hayFoco = municipioSeleccionado !== null;
-
+      // municipios entre sí y el color ES la información, tiene que
+      // coincidir con la leyenda de un vistazo. En cuanto se entra en uno,
+      // el relleno de ESE municipio se retira por completo y el color de
+      // severidad pasa a vivir en su contorno — así se ve la calle debajo,
+      // sin perder de vista qué tan grave fue ahí. Los demás no se alteran.
       return {
         fillColor: nivel.color,
-        fillOpacity: hayFoco
-          ? seleccionado
-            ? 0.18
-            : 0.1
-          : dato
-            ? 0.82
-            : 0.4,
-        color: seleccionado ? '#111827' : nivel.colorBorde,
-        weight: seleccionado ? 2.5 : 0.8,
-        opacity: seleccionado ? 1 : hayFoco ? 0.5 : 0.75,
+        fillOpacity: seleccionado ? 0 : dato ? 0.82 : 0.4,
+        color: seleccionado ? nivel.color : nivel.colorBorde,
+        weight: seleccionado ? 3.5 : 0.8,
+        opacity: seleccionado ? 1 : 0.75,
         className: 'municipio-path',
       };
     },
@@ -559,6 +577,8 @@ const MapPage: React.FC = () => {
       if (!codigo) return;
 
       const dato = afectacionPorMunicipio[codigo];
+      const nivel = getNivel(dato?.severidad);
+      const seleccionado = codigo === municipioSeleccionado;
       const path = layer as L.Path;
 
       // Etiqueta permanente solo en los municipios con afectación reportada:
@@ -578,20 +598,27 @@ const MapPage: React.FC = () => {
 
       path.on({
         mouseover: () => {
-          path.setStyle({ weight: 2.5, color: '#111827', opacity: 1 });
+          // El borde de hover se queda en el mismo tono de la severidad
+          // (solo más grueso) en vez de saltar a negro: un contorno negro
+          // grueso sobre un relleno translúcido "apaga" visualmente el
+          // color y da la impresión de que el municipio perdió su relleno.
+          if (!seleccionado) {
+            path.setStyle({ weight: 2, color: nivel.colorBorde, opacity: 1 });
+          }
           path.bringToFront();
         },
         mouseout: () => path.setStyle(estiloMunicipio(feature)),
         click: () => setMunicipioSeleccionado(codigo),
       });
     },
-    [estiloMunicipio]
+    [estiloMunicipio, municipioSeleccionado]
   );
 
   // Forzar el re-render del GeoJSON cuando cambia lo que decide su color.
   const claveMunicipios = `municipios-${municipioSeleccionado ?? 'ninguno'}`;
 
   const tiles = TILES[estiloMapa];
+  const urlTeselas = municipioSeleccionado && tiles.urlEnfocado ? tiles.urlEnfocado : tiles.url;
 
   const filtrosNode = (
     <MapFilters
@@ -615,6 +642,7 @@ const MapPage: React.FC = () => {
             markers={filteredMarkers}
             loading={loading}
             nombresMunicipios={nombresMunicipios}
+            metaMunicipios={metaMunicipios}
             municipioSeleccionado={municipioSeleccionado}
             onSeleccionarMunicipio={setMunicipioSeleccionado}
             onIrAMarcador={enfocarMarcador}
@@ -674,8 +702,8 @@ const MapPage: React.FC = () => {
           <ZoomExpuesto />
 
           <TileLayer
-            key={estiloMapa}
-            url={tiles.url}
+            key={`${estiloMapa}-${municipioSeleccionado ? 'foco' : 'base'}`}
+            url={urlTeselas}
             attribution={tiles.attribution}
             maxNativeZoom={18}
             keepBuffer={2}

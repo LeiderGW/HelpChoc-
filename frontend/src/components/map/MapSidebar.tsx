@@ -18,7 +18,8 @@
 //     en la misma columna, lo que hacía imposible saber qué era más importante.
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronLeft, Filter, Search, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertTriangle, ChevronDown, ChevronLeft, Filter, MessageSquarePlus, Search, X } from 'lucide-react';
 
 import Button from '../common/Button';
 import MapCapas from './MapCapas';
@@ -37,10 +38,17 @@ import {
 
 type Pestana = 'municipios' | 'ayuda';
 
+interface MetaMunicipio {
+  subregion: string | null;
+  areaKm2: number | null;
+  distanciaEpicentroKm: number | null;
+}
+
 interface MapSidebarProps {
   markers: MapMarkerData[];
   loading: boolean;
   nombresMunicipios: Record<string, string>;
+  metaMunicipios: Record<string, MetaMunicipio>;
   municipioSeleccionado: string | null;
   onSeleccionarMunicipio: (mpCodigo: string | null) => void;
   onIrAMarcador: (marker: MapMarkerData) => void;
@@ -64,6 +72,7 @@ const MapSidebar: React.FC<MapSidebarProps> = ({
   markers,
   loading,
   nombresMunicipios,
+  metaMunicipios,
   municipioSeleccionado,
   onSeleccionarMunicipio,
   onIrAMarcador,
@@ -113,90 +122,96 @@ const MapSidebar: React.FC<MapSidebarProps> = ({
 
   return (
     <div className="flex h-full flex-col bg-white">
-      {/* ── Cabecera ───────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 px-4 pb-3 pt-3.5">
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-[15px] font-bold leading-none text-gray-900">Sismo del Chocó</h1>
-          {/* Etiqueta neutra, no carmesí: el carmesí es un valor de la escala
-              de severidad del mapa. Una magnitud no es un nivel de afectación,
-              y pintarla igual hacía que el color dejara de significar algo. */}
-          <span className="rounded bg-gray-900 px-1.5 py-0.5 font-mono text-[11px] font-bold leading-none text-white">
-            M{sismoChoco.magnitud}
-          </span>
-        </div>
-        <p className="mt-1.5 text-[11px] text-gray-500">
-          {sismoChoco.fecha} · {sismoChoco.horaLocal} · {sismoChoco.profundidadKm} km
-        </p>
-
-        <div className="mt-3 flex items-stretch gap-2">
-          <Cifra valor={sismoChoco.fallecidos} etiqueta="Fallecidos" />
-          <Cifra valor={sismoChoco.heridos} etiqueta="Heridos" />
-          <Cifra valor={sismoChoco.viviendasDestruidas.toLocaleString('es-CO')} etiqueta="Viviendas" />
-        </div>
-
-        <button
-          onClick={() => setFuenteAbierta(v => !v)}
-          className="mt-2 flex w-full items-center gap-1 text-[10px] text-gray-400 transition-colors hover:text-gray-600"
-          aria-expanded={fuenteAbierta}
-        >
-          <ChevronDown className={`h-3 w-3 transition-transform ${fuenteAbierta ? 'rotate-180' : ''}`} />
-          Fuente y alcance de las cifras
-        </button>
-        {fuenteAbierta && (
-          <p className="mt-1.5 rounded-lg bg-gray-50 p-2 text-[10px] leading-relaxed text-gray-500">
-            {sismoChoco.municipiosAfectados} de {sismoChoco.municipiosTotales} municipios afectados.{' '}
-            {sismoChoco.fuente}, corte {sismoChoco.corte}. Son cifras de la fase de emergencia: el censo de
-            damnificados sigue pendiente, así que las de vivienda son las que más van a moverse.
-          </p>
-        )}
-      </div>
-
-      {/* ── Buscador ───────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 px-4 pb-3">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
-            <input
-              type="text"
-              placeholder="Buscar necesidad o municipio..."
-              className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchQuery}
-              onChange={e => onSearchQueryChange(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && onApplySearch()}
-            />
-          </div>
-          <Button variant="outline" size="sm" onClick={onToggleFilters} aria-label="Filtros">
-            <Filter size={15} />
-          </Button>
-          {hasActiveFilters && (
-            <Button variant="outline" size="sm" onClick={onClearFilters} aria-label="Limpiar filtros">
-              <X size={15} />
-            </Button>
-          )}
-        </div>
-        {showFilters && <div className="mt-2">{filtros}</div>}
-      </div>
-
-      {/* ── Capas ──────────────────────────────────────────────────────── */}
-      <MapCapas
-        activas={capasActivas}
-        onAlternar={onAlternarCapa}
-        onTodas={onTodasLasCapas}
-        recuentos={recuentosCapa}
-        abierto={capasAbiertas}
-        onAlternarPanel={onAlternarPanelCapas}
-      />
-
-      {/* ── Pestañas ───────────────────────────────────────────────────── */}
+      {/* Al seleccionar un municipio, la ficha ocupa toda la columna: cabecera
+          del sismo, buscador, capas y pestañas se retiran en vez de quedar
+          fijos arriba compitiendo con el detalle. "Volver" es la única salida,
+          igual que un drill-down normal — no dos formas de deshacer lo mismo. */}
       {!municipioSeleccionado && (
-        <div className="flex flex-shrink-0 gap-4 border-b border-gray-200 px-4">
-          <Tab activa={pestana === 'municipios'} onClick={() => setPestana('municipios')} recuento={afectados.length}>
-            Municipios
-          </Tab>
-          <Tab activa={pestana === 'ayuda'} onClick={() => setPestana('ayuda')} recuento={markers.length}>
-            Ayuda
-          </Tab>
-        </div>
+        <>
+          {/* ── Cabecera ───────────────────────────────────────────────── */}
+          <div className="flex-shrink-0 px-4 pb-3 pt-3.5">
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-[15px] font-bold leading-none text-gray-900">Sismo del Chocó</h1>
+              {/* Etiqueta neutra, no carmesí: el carmesí es un valor de la escala
+                  de severidad del mapa. Una magnitud no es un nivel de afectación,
+                  y pintarla igual hacía que el color dejara de significar algo. */}
+              <span className="rounded bg-gray-900 px-1.5 py-0.5 font-mono text-[11px] font-bold leading-none text-white">
+                M{sismoChoco.magnitud}
+              </span>
+            </div>
+            <p className="mt-1.5 text-[11px] text-gray-500">
+              {sismoChoco.fecha} · {sismoChoco.horaLocal} · {sismoChoco.profundidadKm} km
+            </p>
+
+            <div className="mt-3 flex items-stretch gap-2">
+              <Cifra valor={sismoChoco.fallecidos} etiqueta="Fallecidos" />
+              <Cifra valor={sismoChoco.heridos} etiqueta="Heridos" />
+              <Cifra valor={sismoChoco.viviendasDestruidas.toLocaleString('es-CO')} etiqueta="Viviendas" />
+            </div>
+
+            <button
+              onClick={() => setFuenteAbierta(v => !v)}
+              className="mt-2 flex w-full items-center gap-1 text-[10px] text-gray-400 transition-colors hover:text-gray-600"
+              aria-expanded={fuenteAbierta}
+            >
+              <ChevronDown className={`h-3 w-3 transition-transform ${fuenteAbierta ? 'rotate-180' : ''}`} />
+              Fuente y alcance de las cifras
+            </button>
+            {fuenteAbierta && (
+              <p className="mt-1.5 rounded-lg bg-gray-50 p-2 text-[10px] leading-relaxed text-gray-500">
+                {sismoChoco.municipiosAfectados} de {sismoChoco.municipiosTotales} municipios afectados.{' '}
+                {sismoChoco.fuente}, corte {sismoChoco.corte}. Son cifras de la fase de emergencia: el censo de
+                damnificados sigue pendiente, así que las de vivienda son las que más van a moverse.
+              </p>
+            )}
+          </div>
+
+          {/* ── Buscador ───────────────────────────────────────────────── */}
+          <div className="flex-shrink-0 px-4 pb-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={15} />
+                <input
+                  type="text"
+                  placeholder="Buscar necesidad o municipio..."
+                  className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchQuery}
+                  onChange={e => onSearchQueryChange(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && onApplySearch()}
+                />
+              </div>
+              <Button variant="outline" size="sm" onClick={onToggleFilters} aria-label="Filtros">
+                <Filter size={15} />
+              </Button>
+              {hasActiveFilters && (
+                <Button variant="outline" size="sm" onClick={onClearFilters} aria-label="Limpiar filtros">
+                  <X size={15} />
+                </Button>
+              )}
+            </div>
+            {showFilters && <div className="mt-2">{filtros}</div>}
+          </div>
+
+          {/* ── Capas ──────────────────────────────────────────────────── */}
+          <MapCapas
+            activas={capasActivas}
+            onAlternar={onAlternarCapa}
+            onTodas={onTodasLasCapas}
+            recuentos={recuentosCapa}
+            abierto={capasAbiertas}
+            onAlternarPanel={onAlternarPanelCapas}
+          />
+
+          {/* ── Pestañas ──────────────────────────────────────────────── */}
+          <div className="flex flex-shrink-0 gap-4 border-b border-gray-200 px-4">
+            <Tab activa={pestana === 'municipios'} onClick={() => setPestana('municipios')} recuento={afectados.length}>
+              Municipios
+            </Tab>
+            <Tab activa={pestana === 'ayuda'} onClick={() => setPestana('ayuda')} recuento={markers.length}>
+              Ayuda
+            </Tab>
+          </div>
+        </>
       )}
 
       {/* ── Cuerpo ─────────────────────────────────────────────────────── */}
@@ -207,6 +222,7 @@ const MapSidebar: React.FC<MapSidebarProps> = ({
           <DetalleMunicipio
             nombre={nombreSeleccionado!}
             afectacion={seleccionado}
+            meta={metaMunicipios[municipioSeleccionado]}
             marcadores={marcadoresPorMunicipio.get(normalizarNombre(nombreSeleccionado!)) ?? []}
             esEpicentro={municipioSeleccionado === sismoChoco.epicentroMpCodigo}
             onVolver={() => onSeleccionarMunicipio(null)}
@@ -223,7 +239,7 @@ const MapSidebar: React.FC<MapSidebarProps> = ({
         )}
       </div>
 
-      <MapLegend />
+      {!municipioSeleccionado && <MapLegend />}
     </div>
   );
 };
@@ -399,61 +415,96 @@ const ListaAyuda: React.FC<{
 const DetalleMunicipio: React.FC<{
   nombre: string;
   afectacion?: AfectacionMunicipio;
+  meta?: MetaMunicipio;
   marcadores: MapMarkerData[];
   esEpicentro: boolean;
   onVolver: () => void;
   onIrAMarcador: (marker: MapMarkerData) => void;
-}> = ({ nombre, afectacion, marcadores, esEpicentro, onVolver, onIrAMarcador }) => {
+}> = ({ nombre, afectacion, meta, marcadores, esEpicentro, onVolver, onIrAMarcador }) => {
+  const navigate = useNavigate();
   const nivel = getNivel(afectacion?.severidad);
+
+  const hayCifras =
+    !!afectacion &&
+    (afectacion.fallecidos !== null ||
+      afectacion.heridos !== null ||
+      afectacion.viviendasColapsadas !== null ||
+      afectacion.viviendasDanadas !== null);
 
   return (
     <div className="pb-4">
       <button
         onClick={onVolver}
-        className="flex items-center gap-1 px-4 py-2.5 text-[11px] font-medium text-gray-500 transition-colors hover:text-gray-800"
+        className="flex items-center gap-1 px-4 py-2.5 text-[13px] font-medium text-gray-600 transition-colors hover:text-gray-900"
       >
-        <ChevronLeft size={13} />
-        Todos los municipios
+        <ChevronLeft size={15} />
+        Volver
       </button>
 
-      <div className="px-4">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-[17px] font-bold leading-tight text-gray-900">{nombre}</h2>
+      {/* La severidad deja de ser una etiqueta suelta y pasa a ser el fondo de
+          toda la cabecera: es lo primero que se percibe, antes de leer una
+          sola cifra — igual que el resto del mapa, donde el color ES el dato. */}
+      <div className="px-4 pb-4 pt-1" style={{ backgroundColor: nivel.color }}>
+        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: nivel.colorTexto, opacity: 0.72 }}>
+          Chocó{meta?.subregion ? ` · ${meta.subregion}` : ''}
+        </p>
+        <h2 className="mt-0.5 text-[26px] font-bold leading-tight" style={{ color: nivel.colorTexto }}>
+          {nombre}
+        </h2>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span
+            className="rounded-full px-2.5 py-1 text-[11px] font-semibold"
+            style={{ backgroundColor: 'rgba(255,255,255,0.28)', color: nivel.colorTexto }}
+          >
+            {nivel.etiqueta}
+          </span>
           {esEpicentro && (
-            <span className="flex-shrink-0 rounded-full border border-gray-300 px-2 py-0.5 text-[10px] font-bold text-gray-600">
+            <span
+              className="rounded-full border px-2 py-1 text-[10px] font-bold"
+              style={{ borderColor: nivel.colorTexto, color: nivel.colorTexto }}
+            >
               EPICENTRO
             </span>
           )}
         </div>
+      </div>
 
-        <span
-          className="mt-2 inline-block rounded-full px-2.5 py-1 text-[11px] font-semibold"
-          style={{ backgroundColor: nivel.color, color: nivel.colorTexto }}
-        >
-          {nivel.etiqueta}
-        </span>
+      <div className="px-4">
+        {(meta?.distanciaEpicentroKm != null || meta?.areaKm2 != null) && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {meta?.distanciaEpicentroKm != null && (
+              <TarjetaCifra valor={`${Math.round(meta.distanciaEpicentroKm)} km`} etiqueta="Distancia al epicentro" />
+            )}
+            {meta?.areaKm2 != null && (
+              <TarjetaCifra valor={`${Math.round(meta.areaKm2).toLocaleString('es-CO')} km²`} etiqueta="Extensión" />
+            )}
+          </div>
+        )}
+
+        {hayCifras && (
+          <div className="mt-3 overflow-hidden rounded-lg border border-gray-200">
+            <div className="bg-gray-50 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+              Afectación reportada
+            </div>
+            <dl className="px-3">
+              {afectacion!.fallecidos !== null && <Fila termino="Fallecidos" valor={afectacion!.fallecidos} />}
+              {afectacion!.heridos !== null && <Fila termino="Heridos" valor={afectacion!.heridos} />}
+              {afectacion!.viviendasColapsadas !== null && (
+                <Fila termino="Viviendas colapsadas" valor={afectacion!.viviendasColapsadas} />
+              )}
+              {afectacion!.viviendasDanadas !== null && (
+                <Fila termino="Viviendas dañadas" valor={afectacion!.viviendasDanadas} />
+              )}
+            </dl>
+          </div>
+        )}
 
         {afectacion ? (
           <>
-            {(afectacion.fallecidos !== null ||
-              afectacion.heridos !== null ||
-              afectacion.viviendasColapsadas !== null ||
-              afectacion.viviendasDanadas !== null) && (
-              <dl className="mt-3">
-                {afectacion.fallecidos !== null && <Fila termino="Fallecidos" valor={afectacion.fallecidos} />}
-                {afectacion.heridos !== null && <Fila termino="Heridos" valor={afectacion.heridos} />}
-                {afectacion.viviendasColapsadas !== null && (
-                  <Fila termino="Viviendas colapsadas" valor={afectacion.viviendasColapsadas} />
-                )}
-                {afectacion.viviendasDanadas !== null && (
-                  <Fila termino="Viviendas dañadas" valor={afectacion.viviendasDanadas} />
-                )}
-              </dl>
-            )}
-
-            <p className="mt-3 text-[13px] leading-relaxed text-gray-700">{afectacion.descripcion}</p>
-
-            <p className="mt-3 border-t border-gray-100 pt-2 text-[10px] leading-snug text-gray-400">
+            <div className="mt-3 rounded-lg border border-gray-200 p-3">
+              <p className="text-[13px] leading-relaxed text-gray-700">{afectacion.descripcion}</p>
+            </div>
+            <p className="mt-2 text-[10px] leading-snug text-gray-400">
               Fuente: {afectacion.fuente} · Corte {afectacion.fechaCorte}
               {afectacion.preliminar && ' · Cifra preliminar'}
             </p>
@@ -494,9 +545,28 @@ const DetalleMunicipio: React.FC<{
           </ul>
         )}
       </div>
+
+      {/* Cierre accionable: sismoHelp termina en "ayúdanos a corregir este
+          dato" porque esa ficha vive de correcciones de la comunidad. El
+          bucle de esta app es otro — conectar necesidad con ayuda — así que
+          la ficha cierra empujando hacia ESE bucle en vez de imitar un botón
+          que no tenemos cómo cumplir. */}
+      <div className="mt-4 px-4">
+        <Button variant="primary" fullWidth onClick={() => navigate('/reportar-necesidad')} className="gap-2">
+          <MessageSquarePlus size={16} />
+          Reportar una necesidad aquí
+        </Button>
+      </div>
     </div>
   );
 };
+
+const TarjetaCifra: React.FC<{ valor: string; etiqueta: string }> = ({ valor, etiqueta }) => (
+  <div className="rounded-lg border border-gray-200 px-3 py-2.5">
+    <div className="font-mono text-[15px] font-bold leading-none text-gray-900">{valor}</div>
+    <div className="mt-1 text-[11px] leading-tight text-gray-500">{etiqueta}</div>
+  </div>
+);
 
 const Fila: React.FC<{ termino: string; valor: number | string }> = ({ termino, valor }) => (
   <div className="flex justify-between gap-4 border-t border-gray-100 py-1.5 text-[12px]">

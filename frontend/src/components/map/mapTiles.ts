@@ -7,6 +7,11 @@ interface DefinicionEstilo {
   label: string;
   descripcion: string;
   url: string;
+  /** Variante con más color y detalle de calles, para cuando se enfoca un
+   *  municipio: el estilo "claro" es deliberadamente pálido para que el
+   *  coropleto sólido resalte, pero al bajarle el relleno al seleccionado
+   *  hay que mostrar algo con más contraste debajo. */
+  urlEnfocado?: string;
   /** Capa de etiquetas aparte, pintada por encima de los marcadores del Chocó. */
   etiquetas: string | null;
   attribution: string;
@@ -17,6 +22,7 @@ export const TILES: Record<EstiloMapa, DefinicionEstilo> = {
     label: 'Claro',
     descripcion: 'Fondo neutro, ideal para leer los marcadores',
     url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+    urlEnfocado: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png',
     etiquetas: 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
