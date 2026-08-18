@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import { Mail, Lock, Eye, EyeOff, User, Phone } from 'lucide-react';
@@ -18,6 +18,8 @@ const RegisterPage: React.FC = () => {
   const [error, setError] = useState('');
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const destino = (location.state as { from?: Location })?.from;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -49,7 +51,7 @@ const RegisterPage: React.FC = () => {
         phone: formData.phone,
         role: 'volunteer',
       });
-      navigate('/');
+      navigate(destino ? `${destino.pathname}${destino.search}` : '/', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Error al registrar usuario');
     } finally {
@@ -184,7 +186,7 @@ const RegisterPage: React.FC = () => {
 
           <p className="text-center text-sm text-gray-600">
             ¿Ya tienes una cuenta?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/login" state={location.state} className="font-medium text-blue-600 hover:text-blue-500">
               Inicia sesión aquí
             </Link>
           </p>

@@ -4,12 +4,13 @@ import {
   Menu, X, Home, Map, Package, Heart, MapPin, 
   BarChart3, AlertTriangle, HeartHandshake, User, 
   LogIn, LogOut, Sun, Moon, Bell, ChevronDown,
-  Settings, HelpCircle, Shield
+  HelpCircle, Shield
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotifications } from '../../hooks/useNotifications';
 import Badge from '../common/Badge';
+import { ROLE_LABELS } from '../../lib/constants';
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -207,7 +208,7 @@ const Header: React.FC = () => {
                       <p className="font-medium text-gray-800">{appUser?.full_name}</p>
                       <p className="text-xs text-gray-500">{appUser?.email}</p>
                       <Badge size="sm" variant="info" className="mt-1">
-                        {appUser?.role?.toUpperCase() || 'VISITOR'}
+                        {ROLE_LABELS[(appUser?.role ?? 'visitor') as keyof typeof ROLE_LABELS]}
                       </Badge>
                     </div>
                     <div className="py-1">
@@ -230,15 +231,7 @@ const Header: React.FC = () => {
                         </Link>
                       )}
                       <Link
-                        to="/settings"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Settings className="mr-3" size={16} />
-                        Configuración
-                      </Link>
-                      <Link
-                        to="/help"
+                        to="/faq"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         onClick={() => setIsUserMenuOpen(false)}
                       >

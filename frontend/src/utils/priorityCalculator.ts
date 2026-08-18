@@ -80,27 +80,10 @@ export function getPriorityBgColor(priority: Priority): string {
   return colors[priority];
 }
 
-export function getPriorityIcon(priority: Priority): string {
-  const icons: Record<Priority, string> = {
-    critical: '🔴',
-    high: '🟠',
-    medium: '🟡',
-    low: '🟢',
-    covered: '✅',
-  };
-  return icons[priority];
-}
-
-export function getPriorityEmoji(priority: Priority): string {
-  const emojis: Record<Priority, string> = {
-    critical: '🚨',
-    high: '⚠️',
-    medium: '📋',
-    low: '📌',
-    covered: '🎉',
-  };
-  return emojis[priority];
-}
+// getPriorityIcon / getPriorityEmoji se eliminaron: pintaban un círculo de
+// color (🔴🟠🟡🟢) dentro de una insignia que YA venía coloreada por
+// getPriorityColor, así que repetían el mismo dato en el mismo sitio. La
+// etiqueta de texto (getPriorityLabel) es la que lleva el significado.
 
 export function getPriorityDescription(priority: Priority): string {
   const descriptions: Record<Priority, string> = {

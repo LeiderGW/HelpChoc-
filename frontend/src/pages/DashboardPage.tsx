@@ -9,11 +9,11 @@ import {
   MapPin, TrendingUp, TrendingDown, Calendar, Clock
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
-import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import { getPriorityLabel } from '../utils/priorityCalculator';
+import { etiquetaCategoria } from '../lib/constants';
 
 const DashboardPage: React.FC = () => {
-  const { isAdmin, isOrganization } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalNeeds: 0,
@@ -35,19 +35,15 @@ const DashboardPage: React.FC = () => {
   const COLORS = ['#DC2626', '#F97316', '#EAB308', '#22C55E', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6'];
 
   useEffect(() => {
-    if (!isAdmin && !isOrganization) {
-      toast.error('No tienes permisos para acceder al dashboard');
-      return;
-    }
     fetchDashboardData();
-  }, [isAdmin, isOrganization]);
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
       // Fetch needs statistics
       const { data: needsData } = await supabase
         .from('needs')
-        .select('priority, status, category, department_id, affected_people, created_at, quantity_needed, quantity_received');
+        .select('id, product, unit, priority, status, category, department_id, affected_people, created_at, quantity_needed, quantity_received');
 
       // Fetch offers
       const { data: offersData } = await supabase
@@ -156,18 +152,6 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  if (!isAdmin && !isOrganization) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="mx-auto text-red-500" size={64} />
-          <h2 className="mt-4 text-2xl font-bold text-gray-800">Acceso Denegado</h2>
-          <p className="text-gray-600">No tienes permisos para acceder al dashboard</p>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -189,8 +173,8 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Necesidades</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalNeeds}</p>
+                <p className="text-sm text-gray-500">Total necesidades</p>
+                <p className="font-mono text-[28px] font-bold leading-none tabular-nums text-gray-900">{stats.totalNeeds}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
                 <Package className="text-blue-600" size={24} />
@@ -206,8 +190,8 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Ayudas Ofrecidas</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalOffers}</p>
+                <p className="text-sm text-gray-500">Ayudas ofrecidas</p>
+                <p className="font-mono text-[28px] font-bold leading-none tabular-nums text-gray-900">{stats.totalOffers}</p>
               </div>
               <div className="bg-green-100 p-3 rounded-lg">
                 <Heart className="text-green-600" size={24} />
@@ -223,8 +207,8 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Personas Afectadas</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.affectedPeople}</p>
+                <p className="text-sm text-gray-500">Personas afectadas</p>
+                <p className="font-mono text-[28px] font-bold leading-none tabular-nums text-gray-900">{stats.affectedPeople.toLocaleString('es-CO')}</p>
               </div>
               <div className="bg-orange-100 p-3 rounded-lg">
                 <Users className="text-orange-600" size={24} />
@@ -239,8 +223,8 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Centros Activos</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeCenters}</p>
+                <p className="text-sm text-gray-500">Centros activos</p>
+                <p className="font-mono text-[28px] font-bold leading-none tabular-nums text-gray-900">{stats.activeCenters}</p>
               </div>
               <div className="bg-purple-100 p-3 rounded-lg">
                 <MapPin className="text-purple-600" size={24} />
@@ -352,7 +336,7 @@ const DashboardPage: React.FC = () => {
                   return (
                     <tr key={need.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium">{need.product}</td>
-                      <td className="py-3 px-4 text-gray-600">{need.category}</td>
+                      <td className="py-3 px-4 text-gray-600">{etiquetaCategoria(need.category)}</td>
                       <td className="py-3 px-4 font-medium text-red-600">
                         {need.pending} {need.unit}
                       </td>
@@ -363,7 +347,7 @@ const DashboardPage: React.FC = () => {
                           need.priority === 'medium' ? 'bg-yellow-500' :
                           'bg-green-500'
                         }`}>
-                          {need.priority.toUpperCase()}
+                          {getPriorityLabel(need.priority)}
                         </span>
                       </td>
                       <td className="py-3 px-4">

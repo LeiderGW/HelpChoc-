@@ -17,8 +17,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/common/ProtectedRoute';
-
-// Agregar estas importaciones en App.tsx
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -26,17 +24,6 @@ import TermsPage from './pages/TermsPage';
 import FAQPage from './pages/FAQPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-
-// Agregar estas rutas en el Router
-<Routes>
-<Route path="/about" element={<AboutPage />} />
-<Route path="/contact" element={<ContactPage />} />
-<Route path="/privacy" element={<PrivacyPage />} />
-<Route path="/terms" element={<TermsPage />} />
-<Route path="/faq" element={<FAQPage />} />
-<Route path="/forgot-password" element={<ForgotPasswordPage />} />
-<Route path="/reset-password" element={<ResetPasswordPage />} />
-</Routes>
 
 function App() {
   return (
@@ -50,22 +37,17 @@ function App() {
               <Route path="/necesidades" element={<NeedsPage />} />
               <Route path="/necesidades/:id" element={<NeedDetailPage />} />
               <Route path="/ayudas" element={<OffersPage />} />
-              <Route path="/reportar-necesidad" element={
-                <ProtectedRoute>
-                  <ReportNeedPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/ofrecer-ayuda" element={
-                <ProtectedRoute>
-                  <OfferHelpPage />
-                </ProtectedRoute>
-              } />
+              <Route path="/reportar-necesidad" element={<ReportNeedPage />} />
+              <Route path="/ofrecer-ayuda" element={<OfferHelpPage />} />
               <Route path="/puntos-entrega" element={<CollectionCentersPage />} />
-              <Route path="/estadisticas" element={
-                <ProtectedRoute requiredRoles={['admin', 'organization']}>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/estadisticas" element={<DashboardPage />} />
               <Route path="/perfil" element={
                 <ProtectedRoute>
                   <ProfilePage />

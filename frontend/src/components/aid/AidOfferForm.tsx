@@ -199,7 +199,7 @@ const AidOfferForm: React.FC<AidOfferFormProps> = ({
             label="Asociar a una necesidad (opcional)"
             options={needs.map(n => ({
               value: n.id,
-              label: `${n.product} - ${n.quantity_needed} ${n.unit} ${n.priority === 'critical' ? '🔴' : ''}`,
+              label: `${n.product} - ${n.quantity_needed} ${n.unit}${n.priority === 'critical' ? ' (crítica)' : ''}`,
             }))}
             placeholder="Sin asociar (ofrezco ayuda general)"
           />

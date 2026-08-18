@@ -12,7 +12,7 @@ export const needsService = {
           location:locations(*),
           municipality:municipalities(*),
           department:departments(*),
-          reporter:users(full_name, email)
+          reporter:users!needs_reporter_id_fkey(full_name, email)
         `);
 
       // Apply filters
@@ -74,7 +74,7 @@ export const needsService = {
           location:locations(*),
           municipality:municipalities(*),
           department:departments(*),
-          reporter:users(full_name, email, phone),
+          reporter:users!needs_reporter_id_fkey(full_name, email, phone),
           verified_by_user:users!needs_verified_by_fkey(full_name, email)
         `)
         .eq('id', id)

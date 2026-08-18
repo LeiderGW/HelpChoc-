@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Filter, Search, MapPin, Package, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Filter, MapPin, Package, Search, Users } from 'lucide-react';
 import { needsService } from '../services/needsService';
 import { Need, NeedFilters, NeedCategory } from '../types';
-import { getPriorityColor, getPriorityIcon } from '../utils/priorityCalculator';
+import { getPriorityColor, getPriorityLabel } from '../utils/priorityCalculator';
 import Button from '../components/common/Button';
+import { etiquetaCategoria } from '../lib/constants';
 
 const NeedsPage: React.FC = () => {
   const [needs, setNeeds] = useState<Need[]>([]);
@@ -190,14 +191,15 @@ const NeedsPage: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <h3 className="font-bold text-lg text-gray-800">{need.product}</h3>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-bold text-white ${getPriorityColor(need.priority)}`}>
-                            {getPriorityIcon(need.priority)} {need.priority.toUpperCase()}
+                            {getPriorityLabel(need.priority)}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-500">{need.category}</p>
+                        <p className="text-sm text-gray-500">{etiquetaCategoria(need.category)}</p>
                       </div>
                       {need.verification_status === 'verified' && (
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
-                          ✓ Verificado
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                          <CheckCircle size={12} aria-hidden="true" />
+                          Verificado
                         </span>
                       )}
                     </div>
@@ -225,7 +227,10 @@ const NeedsPage: React.FC = () => {
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>{Math.round(percentage)}% cubierto</span>
                         {need.affected_people && (
-                          <span>👥 {need.affected_people} personas</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Users size={12} aria-hidden="true" />
+                            {need.affected_people} personas
+                          </span>
                         )}
                       </div>
                     </div>

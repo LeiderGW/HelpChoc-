@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, MapPin, Filter, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Filter, MapPin, Package, Search, Users } from 'lucide-react';
 import { Need } from '../../types';
-import { getPriorityColor, getPriorityIcon, getPriorityLabel } from '../../utils/priorityCalculator';
+import { getPriorityColor, getPriorityLabel } from '../../utils/priorityCalculator';
 import { formatRelativeTime } from '../../utils/formatters';
 import Badge from '../common/Badge';
 import Button from '../common/Button';
+import { etiquetaCategoria } from '../../lib/constants';
 
 interface NeedListProps {
   needs: Need[];
@@ -154,22 +155,23 @@ const NeedList: React.FC<NeedListProps> = ({
                       <div className="flex items-center flex-wrap gap-2">
                         <h3 className="font-bold text-gray-800">{need.product}</h3>
                         <Badge variant={need.priority as any} size="sm">
-                          {getPriorityIcon(need.priority)} {getPriorityLabel(need.priority)}
+                          {getPriorityLabel(need.priority)}
                         </Badge>
                         {isVerified && (
-                          <Badge variant="verified" size="sm">✓ Verificado</Badge>
+                          <Badge variant="verified" size="sm">Verificado</Badge>
                         )}
                         {need.status === 'fulfilled' && (
                           <Badge variant="success" size="sm">Cubierto</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">{need.category}</p>
+                      <p className="text-sm text-gray-500 mt-1">{etiquetaCategoria(need.category)}</p>
                     </div>
                     <Link
                       to={`/necesidades/${need.id}`}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
                     >
-                      Ver detalles →
+                      Ver detalles
+                      <ArrowRight size={14} aria-hidden="true" />
                     </Link>
                   </div>
 
@@ -200,7 +202,10 @@ const NeedList: React.FC<NeedListProps> = ({
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>{Math.round(percentage)}% cubierto</span>
                       {need.affected_people && (
-                        <span>👥 {need.affected_people} personas</span>
+                        <span className="inline-flex items-center gap-1">
+                          <Users size={12} aria-hidden="true" />
+                          {need.affected_people} personas
+                        </span>
                       )}
                     </div>
                   </div>

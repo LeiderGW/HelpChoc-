@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { ROLE_LABELS } from '../../lib/constants';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -106,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, onClose }) => {
                   {appUser.full_name}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {appUser.role?.toUpperCase() || 'VISITOR'}
+                  {ROLE_LABELS[(appUser.role ?? 'visitor') as keyof typeof ROLE_LABELS]}
                 </p>
               </div>
             )}

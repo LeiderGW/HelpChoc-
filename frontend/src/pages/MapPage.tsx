@@ -4,7 +4,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/map.css';
 import { Circle, GeoJSON, MapContainer, Marker, ScaleControl, TileLayer, useMap } from 'react-leaflet';
-import { PanelLeftOpen, X } from 'lucide-react';
+import {
+  AlertTriangle, Building2, Clock, Info, MapPin, PanelLeftOpen,
+  Package, Phone, User, X, type LucideIcon,
+} from 'lucide-react';
 
 import MapFilters, { MapFiltersState } from '../components/map/MapFilters';
 import MapControls from '../components/map/MapControls';
@@ -443,9 +446,11 @@ const MapPage: React.FC = () => {
   useEffect(() => {
     if (!puntoPedido || !mapaListo || loading) return;
     const marker = markers.find(m => m.id === puntoPedido);
-    if (!marker) return;
+    if (marker) enfocarMarcador(marker);
 
-    enfocarMarcador(marker);
+    // Se borra tanto si se encontró (ya se hizo el zoom) como si no (el
+    // punto no existe o no tiene ubicación): en ningún caso debe quedar
+    // colgado en la URL, o el efecto lo reintentaría en cada render.
     setSearchParams(previos => {
       const siguiente = new URLSearchParams(previos);
       siguiente.delete('punto');
@@ -833,6 +838,30 @@ const MapPage: React.FC = () => {
   );
 };
 
+/**
+ * Fila de dato dentro de un popup: icono + texto.
+ *
+ * Antes cada línea empezaba con un emoji (📍 📞 🕐 …). El emoji lo dibuja el
+ * sistema operativo, así que cambiaba de tamaño y color en cada dispositivo y
+ * no se alineaba con el texto. Con un icono de trazo el color lo hereda del
+ * texto y la línea base cuadra.
+ */
+const DatoPopup: React.FC<{ icono: LucideIcon; children: React.ReactNode; tono?: 'normal' | 'aviso' }> = ({
+  icono: Icono,
+  children,
+  tono = 'normal',
+}) => (
+  <p className={`flex items-start gap-1.5 ${tono === 'aviso' ? 'text-[11px] leading-snug text-gray-500' : 'text-gray-600'}`}>
+    <Icono
+      size={tono === 'aviso' ? 12 : 14}
+      strokeWidth={1.75}
+      className="mt-0.5 flex-shrink-0 text-gray-400"
+      aria-hidden="true"
+    />
+    <span className="min-w-0">{children}</span>
+  </p>
+);
+
 const PopupMarcador: React.FC<{ marker: MapMarkerData; onVerDetalles: () => void }> = ({ marker, onVerDetalles }) => {
   const need = marker.need;
   const center = marker.center;
@@ -893,15 +922,15 @@ const PopupMarcador: React.FC<{ marker: MapMarkerData; onVerDetalles: () => void
       {/* Puntos oficiales: acopio, hospital, albergue */}
       {oficial && (
         <div className="space-y-1 text-sm">
-          {oficial.direccion && <p className="text-gray-600">📍 {oficial.direccion}</p>}
-          {oficial.contacto && <p className="text-gray-600">📞 {oficial.contacto}</p>}
-          {oficial.estado && <p className="text-gray-600">ℹ️ {oficial.estado}</p>}
+          {oficial.direccion && <DatoPopup icono={MapPin}>{oficial.direccion}</DatoPopup>}
+          {oficial.contacto && <DatoPopup icono={Phone}>{oficial.contacto}</DatoPopup>}
+          {oficial.estado && <DatoPopup icono={Info}>{oficial.estado}</DatoPopup>}
           <p className="pt-1 text-[11px] leading-snug text-gray-400">
             Fuente: {oficial.fuente}
             {oficial.precision === 'aproximada' && ' · ubicación aproximada'}
           </p>
           {oficial.notaPrecision && (
-            <p className="text-[11px] leading-snug text-gray-500">⚠ {oficial.notaPrecision}</p>
+            <DatoPopup icono={AlertTriangle} tono="aviso">{oficial.notaPrecision}</DatoPopup>
           )}
         </div>
       )}
@@ -935,9 +964,11 @@ const PopupMarcador: React.FC<{ marker: MapMarkerData; onVerDetalles: () => void
             />
           </div>
           {marker.municipality && (
-            <div className="mt-1 text-gray-500">
-              📍 {marker.municipality}
-              {marker.department && `, ${marker.department}`}
+            <div className="mt-1">
+              <DatoPopup icono={MapPin}>
+                {marker.municipality}
+                {marker.department && `, ${marker.department}`}
+              </DatoPopup>
             </div>
           )}
         </div>
@@ -945,10 +976,10 @@ const PopupMarcador: React.FC<{ marker: MapMarkerData; onVerDetalles: () => void
 
       {marker.source === 'center' && center && (
         <div className="space-y-1 text-sm">
-          {center.address && <p className="text-gray-600">📍 {center.address}</p>}
-          {center.schedule && <p className="text-gray-600">🕐 {center.schedule}</p>}
-          {center.contact_phone && <p className="text-gray-600">📞 {center.contact_phone}</p>}
-          {center.responsible_person && <p className="text-gray-600">👤 {center.responsible_person}</p>}
+          {center.address && <DatoPopup icono={MapPin}>{center.address}</DatoPopup>}
+          {center.schedule && <DatoPopup icono={Clock}>{center.schedule}</DatoPopup>}
+          {center.contact_phone && <DatoPopup icono={Phone}>{center.contact_phone}</DatoPopup>}
+          {center.responsible_person && <DatoPopup icono={User}>{center.responsible_person}</DatoPopup>}
           {/* Solo los puntos publicados por una entidad traen procedencia; los
               que alguien registró desde la app la dejan vacía. */}
           {center.source && (
@@ -958,18 +989,16 @@ const PopupMarcador: React.FC<{ marker: MapMarkerData; onVerDetalles: () => void
             </p>
           )}
           {center.location_note && (
-            <p className="text-[11px] leading-snug text-gray-500">⚠ {center.location_note}</p>
+            <DatoPopup icono={AlertTriangle} tono="aviso">{center.location_note}</DatoPopup>
           )}
         </div>
       )}
 
       {marker.source === 'offer' && offer && (
         <div className="space-y-1 text-sm">
-          <p className="text-gray-600">
-            📦 {offer.quantity} {offer.unit} disponibles
-          </p>
-          {offer.organization?.name && <p className="text-gray-600">🏢 {offer.organization.name}</p>}
-          {offer.contact_info && <p className="text-gray-600">📞 {offer.contact_info}</p>}
+          <DatoPopup icono={Package}>{offer.quantity} {offer.unit} disponibles</DatoPopup>
+          {offer.organization?.name && <DatoPopup icono={Building2}>{offer.organization.name}</DatoPopup>}
+          {offer.contact_info && <DatoPopup icono={Phone}>{offer.contact_info}</DatoPopup>}
         </div>
       )}
 

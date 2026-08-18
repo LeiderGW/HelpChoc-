@@ -58,9 +58,10 @@ const NeedFilters: React.FC<NeedFiltersProps> = ({
             onChange={(e) => onFilterChange('category', e.target.value || undefined)}
           >
             <option value="">Todas</option>
+            {/* Un <option> solo admite texto plano: aquí no cabe el icono. */}
             {NEED_CATEGORIES.map(cat => (
               <option key={cat.value} value={cat.value}>
-                {cat.icon} {cat.label}
+                {cat.label}
               </option>
             ))}
           </select>
@@ -76,10 +77,10 @@ const NeedFilters: React.FC<NeedFiltersProps> = ({
             onChange={(e) => onFilterChange('priority', e.target.value || undefined)}
           >
             <option value="">Todas</option>
-            <option value="critical">🔴 Crítica</option>
-            <option value="high">🟠 Alta</option>
-            <option value="medium">🟡 Media</option>
-            <option value="low">🟢 Baja</option>
+            <option value="critical">Crítica</option>
+            <option value="high">Alta</option>
+            <option value="medium">Media</option>
+            <option value="low">Baja</option>
           </select>
         </div>
 

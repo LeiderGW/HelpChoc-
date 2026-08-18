@@ -80,7 +80,7 @@ const FAQPage: React.FC = () => {
       questions: [
         {
           q: '¿Qué significan los colores de los marcadores?',
-          a: '🔴 Crítica, 🟠 Alta, 🟡 Media, 🟢 Ayuda disponible, 🔵 Centro de acopio. Cada marcador muestra información detallada al hacer clic.'
+          a: 'El color indica la urgencia (de rojo oscuro a ámbar según la gravedad) y la forma indica el tipo de punto: círculo para necesidades, insignia para ayuda disponible y gota para acopios, albergues y centros de salud. Al hacer clic en cualquier marcador se abre su ficha con el detalle.'
         },
         {
           q: '¿Puedo ver el mapa sin conexión?',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +7,8 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import { toast } from 'sonner';
+import { getPriorityLabel } from '../utils/priorityCalculator';
+import { HeartHandshake } from 'lucide-react';
 
 const offerSchema = z.object({
   product: z.string().min(2, 'Producto requerido (mínimo 2 caracteres)'),
@@ -18,6 +20,7 @@ const offerSchema = z.object({
   availability_date: z.string().optional(),
   estimated_delivery_date: z.string().optional(),
   contact_info: z.string().min(5, 'Información de contacto requerida'),
+  address: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -26,15 +29,25 @@ type OfferFormData = z.infer<typeof offerSchema>;
 const OfferHelpPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [needs, setNeeds] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [municipalities, setMunicipalities] = useState<any[]>([]);
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
 
-  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<OfferFormData>({
+  const { control, handleSubmit, watch, setValue, reset, getValues, formState: { errors } } = useForm<OfferFormData>({
     resolver: zodResolver(offerSchema),
     defaultValues: {
+      department: '',
+      municipality: '',
+      product: '',
+      availability_date: '',
+      estimated_delivery_date: '',
+      contact_info: '',
+      address: '',
+      notes: '',
       quantity: 1,
     },
   });
@@ -42,9 +55,25 @@ const OfferHelpPage: React.FC = () => {
   const watchedDepartment = watch('department');
   const watchedNeedId = watch('need_id');
 
+  const BORRADOR_KEY = 'ayudamapa-borrador-oferta';
+
   useEffect(() => {
     fetchNeeds();
     fetchDepartments();
+
+    // Igual que en el reporte de necesidades: si el envío quedó pendiente
+    // por falta de sesión, lo escrito vuelve tal como se dejó.
+    const borrador = sessionStorage.getItem(BORRADOR_KEY);
+    if (borrador) {
+      reset(JSON.parse(borrador));
+      sessionStorage.removeItem(BORRADOR_KEY);
+      return;
+    }
+
+    // Llegada desde la ficha de una necesidad ("Ofrecer esta ayuda"): la
+    // deja preseleccionada en vez de mandar a un formulario en blanco.
+    const needParam = searchParams.get('need');
+    if (needParam) setValue('need_id', needParam);
   }, []);
 
   useEffect(() => {
@@ -109,7 +138,16 @@ const OfferHelpPage: React.FC = () => {
 
   const onSubmit = async (data: OfferFormData) => {
     if (!user) {
-      toast.error('Debes iniciar sesión para ofrecer ayuda');
+      toast.error('Inicia sesión para enviar tu oferta', {
+        description: 'Lo que escribiste se guarda: al volver, seguirá aquí.',
+        action: {
+          label: 'Iniciar sesión',
+          onClick: () => {
+            sessionStorage.setItem(BORRADOR_KEY, JSON.stringify(getValues()));
+            navigate('/login', { state: { from: location } });
+          },
+        },
+      });
       return;
     }
 
@@ -127,12 +165,35 @@ const OfferHelpPage: React.FC = () => {
           .single();
 
         if (municipalityData) {
+          // Coordenadas exactas si el navegador las da; si no hay permiso o
+          // soporte, seguimos solo con la dirección escrita a mano — nunca
+          // bloqueamos el envío de la oferta por esto.
+          let latitude: number | null = null;
+          let longitude: number | null = null;
+          if (navigator.geolocation) {
+            try {
+              const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                  enableHighAccuracy: true,
+                  timeout: 8000,
+                  maximumAge: 0,
+                });
+              });
+              latitude = position.coords.latitude;
+              longitude = position.coords.longitude;
+            } catch {
+              // Sin permiso, sin señal o agotó el tiempo: no pasa nada.
+            }
+          }
+
           const { data: locationData } = await supabase
             .from('locations')
             .insert([
               {
                 municipality_id: municipalityData.id,
-                address: data.notes || '',
+                address: data.address || '',
+                latitude,
+                longitude,
               },
             ])
             .select()
@@ -181,7 +242,7 @@ const OfferHelpPage: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl">🤝</span>
+              <HeartHandshake className="text-white" size={30} strokeWidth={1.75} aria-hidden="true" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Ofrecer Ayuda</h1>
             <p className="text-gray-600 mt-2">
@@ -208,7 +269,7 @@ const OfferHelpPage: React.FC = () => {
                       <option key={need.id} value={need.id}>
                         {need.product} - {need.quantity_needed} {need.unit} 
                         {need.municipality ? ` (${need.municipality.name})` : ''}
-                        {need.priority === 'critical' ? ' 🔴' : ''}
+                        {need.priority === 'critical' ? ' (crítica)' : ''}
                       </option>
                     ))}
                   </select>
@@ -225,7 +286,7 @@ const OfferHelpPage: React.FC = () => {
                   Cantidad necesitada: {selectedNeed.quantity_needed} {selectedNeed.unit}
                 </p>
                 <p className="text-sm text-blue-600">
-                  Prioridad: {selectedNeed.priority.toUpperCase()}
+                  Prioridad: {getPriorityLabel(selectedNeed.priority)}
                 </p>
               </div>
             )}
@@ -411,6 +472,26 @@ const OfferHelpPage: React.FC = () => {
               {errors.contact_info && (
                 <p className="mt-1 text-sm text-red-600">{errors.contact_info.message}</p>
               )}
+            </div>
+
+            {/* Address */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                Dirección (opcional)
+              </label>
+              <Controller
+                name="address"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    {...field}
+                    id="address"
+                    type="text"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Escribe la dirección, si la tienes"
+                  />
+                )}
+              />
             </div>
 
             {/* Notes */}

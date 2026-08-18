@@ -176,21 +176,26 @@ const NeedForm: React.FC<NeedFormProps> = ({
               Categoría *
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {NEED_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => field.onChange(cat.value)}
-                  className={`p-3 rounded-xl border-2 text-center transition-all ${
-                    field.value === cat.value
-                      ? 'border-blue-600 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                  }`}
-                >
-                  <div className="text-2xl">{cat.icon}</div>
-                  <div className="text-xs mt-1">{cat.label}</div>
-                </button>
-              ))}
+              {NEED_CATEGORIES.map((cat) => {
+                const Icono = cat.icon;
+                const activa = field.value === cat.value;
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => field.onChange(cat.value)}
+                    aria-pressed={activa}
+                    className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
+                      activa
+                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <Icono size={20} strokeWidth={1.75} aria-hidden="true" />
+                    <span className="text-xs leading-tight">{cat.label}</span>
+                  </button>
+                );
+              })}
             </div>
             {errors.category && (
               <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>

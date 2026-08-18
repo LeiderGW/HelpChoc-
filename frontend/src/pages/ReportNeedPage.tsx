@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { NeedCategory } from '../types';
+import { NEED_CATEGORIES } from '../lib/constants';
 import Button from '../components/common/Button';
 import { toast } from 'sonner';
 
@@ -26,14 +27,20 @@ type NeedFormData = z.infer<typeof needSchema>;
 const ReportNeedPage: React.FC = () => {
   const { user, appUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
   const [municipalities, setMunicipalities] = useState<any[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
 
-  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm<NeedFormData>({
+  const { control, handleSubmit, watch, setValue, reset, getValues, formState: { errors } } = useForm<NeedFormData>({
     resolver: zodResolver(needSchema),
     defaultValues: {
+      department: '',
+      municipality: '',
+      product: '',
+      description: '',
+      address: '',
       quantity_needed: 1,
       affected_people: 0,
     },
@@ -41,8 +48,18 @@ const ReportNeedPage: React.FC = () => {
 
   const watchedDepartment = watch('department');
 
+  const BORRADOR_KEY = 'ayudamapa-borrador-necesidad';
+
   useEffect(() => {
     fetchDepartments();
+
+    // Si el envío quedó pendiente por falta de sesión, lo que ya se había
+    // escrito vuelve exactamente como se dejó al llegar de /login.
+    const borrador = sessionStorage.getItem(BORRADOR_KEY);
+    if (borrador) {
+      reset(JSON.parse(borrador));
+      sessionStorage.removeItem(BORRADOR_KEY);
+    }
   }, []);
 
   useEffect(() => {
@@ -78,7 +95,16 @@ const ReportNeedPage: React.FC = () => {
 
   const onSubmit = async (data: NeedFormData) => {
     if (!user) {
-      toast.error('Debes iniciar sesión para reportar una necesidad');
+      toast.error('Inicia sesión para enviar tu reporte', {
+        description: 'Lo que escribiste se guarda: al volver, seguirá aquí.',
+        action: {
+          label: 'Iniciar sesión',
+          onClick: () => {
+            sessionStorage.setItem(BORRADOR_KEY, JSON.stringify(getValues()));
+            navigate('/login', { state: { from: location } });
+          },
+        },
+      });
       return;
     }
 
@@ -149,22 +175,8 @@ const ReportNeedPage: React.FC = () => {
     }
   };
 
-  const categories: { value: NeedCategory; label: string; icon: string }[] = [
-    { value: 'water', label: 'Agua', icon: '💧' },
-    { value: 'food', label: 'Alimentos', icon: '🍞' },
-    { value: 'medicines', label: 'Medicamentos', icon: '💊' },
-    { value: 'first_aid', label: 'Primeros Auxilios', icon: '🩹' },
-    { value: 'clothing', label: 'Ropa', icon: '👕' },
-    { value: 'mattresses', label: 'Colchonetas', icon: '🛏️' },
-    { value: 'hygiene', label: 'Higiene', icon: '🧼' },
-    { value: 'cleaning', label: 'Aseo', icon: '🧹' },
-    { value: 'housing', label: 'Vivienda', icon: '🏠' },
-    { value: 'tools', label: 'Herramientas', icon: '🔧' },
-    { value: 'transport', label: 'Transporte', icon: '🚗' },
-    { value: 'energy', label: 'Energía', icon: '⚡' },
-    { value: 'communications', label: 'Comunicaciones', icon: '📡' },
-    { value: 'other', label: 'Otros', icon: '📦' },
-  ];
+  // Las categorías salen de lib/constants: esta página tenía su propia copia
+  // de la lista, así que agregar una categoría obligaba a tocar dos sitios.
 
   const units = ['unidades', 'litros', 'kg', 'toneladas', 'paquetes', 'cajas', 'botellas', 'otro'];
 
@@ -193,21 +205,26 @@ const ReportNeedPage: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.value}
-                        type="button"
-                        onClick={() => field.onChange(cat.value)}
-                        className={`p-3 rounded-xl border-2 text-center transition-all ${
-                          field.value === cat.value
-                            ? 'border-blue-600 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                        }`}
-                      >
-                        <div className="text-2xl">{cat.icon}</div>
-                        <div className="text-xs mt-1">{cat.label}</div>
-                      </button>
-                    ))}
+                    {NEED_CATEGORIES.map((cat) => {
+                      const Icono = cat.icon;
+                      const activa = field.value === cat.value;
+                      return (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => field.onChange(cat.value)}
+                          aria-pressed={activa}
+                          className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 text-center transition-all ${
+                            activa
+                              ? 'border-blue-600 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <Icono size={20} strokeWidth={1.75} aria-hidden="true" />
+                          <span className="text-xs leading-tight">{cat.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               />

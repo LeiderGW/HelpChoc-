@@ -8,15 +8,15 @@ import {
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Need, StatusHistory } from '../types';
-import { getPriorityColor, getPriorityIcon, getPriorityLabel } from '../utils/priorityCalculator';
+import { getPriorityColor, getPriorityLabel } from '../utils/priorityCalculator';
 import Button from '../components/common/Button';
-import { useAuth } from '../contexts/AuthContext';
+import Estadistica from '../components/common/Estadistica';
 import { toast } from 'sonner';
+import { AID_STATUS_LABELS, STATUS_LABELS, etiquetaCategoria } from '../lib/constants';
 
 const NeedDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
   const [need, setNeed] = useState<Need | null>(null);
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [relatedOffers, setRelatedOffers] = useState<any[]>([]);
@@ -39,7 +39,7 @@ const NeedDetailPage: React.FC = () => {
           *,
           municipality:municipalities(name, department:departments(name)),
           location:locations(*),
-          reporter:users(full_name, email, phone),
+          reporter:users!needs_reporter_id_fkey(full_name, email, phone),
           verified_by_user:users!needs_verified_by_fkey(full_name, email)
         `)
         .eq('id', needId)
@@ -115,12 +115,19 @@ const NeedDetailPage: React.FC = () => {
   };
 
   const handleOfferHelp = () => {
-    if (!isAuthenticated) {
-      toast.error('Debes iniciar sesión para ofrecer ayuda');
-      navigate('/login');
-      return;
-    }
+    // La sesión solo se pide al enviar, no para ver el formulario: el
+    // propio formulario de oferta avisa y guarda lo escrito si hace falta
+    // iniciar sesión.
     navigate(`/ofrecer-ayuda?need=${id}`);
+  };
+
+  const handleViewOnMap = () => {
+    if (need?.location?.latitude && need?.location?.longitude) {
+      navigate(`/mapa?punto=need-${id}`);
+    } else {
+      toast.info('Esta necesidad todavía no tiene una ubicación exacta registrada');
+      navigate('/mapa');
+    }
   };
 
   if (loading) {
@@ -170,7 +177,7 @@ const NeedDetailPage: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-bold ${isCritical ? 'bg-red-800' : 'bg-blue-800'}`}>
-                    {getPriorityIcon(need.priority)} {getPriorityLabel(need.priority)}
+                    {getPriorityLabel(need.priority)}
                   </span>
                   {isVerified && (
                     <span className="bg-green-500/30 px-3 py-1 rounded-full text-xs font-bold flex items-center">
@@ -180,7 +187,7 @@ const NeedDetailPage: React.FC = () => {
                   )}
                 </div>
                 <h1 className="text-2xl md:text-3xl font-bold">{need.product}</h1>
-                <p className="text-white/80 mt-1">{need.category}</p>
+                <p className="text-white/80 mt-1">{etiquetaCategoria(need.category)}</p>
               </div>
               <Button
                 variant="secondary"
@@ -194,25 +201,14 @@ const NeedDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 border-b border-gray-100">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{need.quantity_needed}</div>
-              <div className="text-sm text-gray-500">Necesitado</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{need.quantity_received}</div>
-              <div className="text-sm text-gray-500">Recibido</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{pending}</div>
-              <div className="text-sm text-gray-500">Pendiente</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{Math.round(percentage)}%</div>
-              <div className="text-sm text-gray-500">Cubierto</div>
-            </div>
-          </div>
+          {/* Stats Grid — la unidad va como nota para no repetirla en cada
+              cifra ni dejarla suelta al lado del número. */}
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-gray-100 p-6 md:grid-cols-4">
+            <Estadistica valor={need.quantity_needed} etiqueta="Necesitado" nota={need.unit} />
+            <Estadistica valor={need.quantity_received} etiqueta="Recibido" nota={need.unit} />
+            <Estadistica valor={pending} etiqueta="Pendiente" nota={need.unit} tono={pending > 0 ? 'alerta' : 'neutro'} />
+            <Estadistica valor={`${Math.round(percentage)}%`} etiqueta="Cubierto" />
+          </dl>
 
           {/* Progress Bar */}
           <div className="px-6 py-4 bg-gray-50">
@@ -329,7 +325,7 @@ const NeedDetailPage: React.FC = () => {
                         offer.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
                         'bg-gray-100 text-gray-700'
                       }`}>
-                        {offer.status}
+                        {AID_STATUS_LABELS[offer.status as keyof typeof AID_STATUS_LABELS] ?? offer.status}
                       </span>
                     </div>
                   ))}
@@ -385,7 +381,7 @@ const NeedDetailPage: React.FC = () => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => navigate('/mapa')}
+                onClick={handleViewOnMap}
                 className="flex-1"
               >
                 <MapPin className="mr-2" size={18} />
@@ -408,7 +404,10 @@ const NeedDetailPage: React.FC = () => {
                       <span className="font-medium">{entry.user?.full_name || 'Usuario'}</span>
                       {' '}{entry.action}
                       {entry.new_status && (
-                        <span className="text-gray-500"> → {entry.new_status}</span>
+                        <span className="text-gray-500">
+                          {' → '}
+                          {STATUS_LABELS[entry.new_status as keyof typeof STATUS_LABELS] ?? entry.new_status}
+                        </span>
                       )}
                     </p>
                     {entry.notes && (

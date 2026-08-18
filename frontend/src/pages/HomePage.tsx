@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { Search, MapPin, AlertTriangle, Package, Users, Heart, ArrowRight } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { Need } from '../types';
-import { getPriorityColor, getPriorityIcon } from '../utils/priorityCalculator';
+import { getPriorityColor, getPriorityLabel } from '../utils/priorityCalculator';
+import { etiquetaCategoria } from '../lib/constants';
+import Estadistica from '../components/common/Estadistica';
 
 const HomePage: React.FC = () => {
   const [needs, setNeeds] = useState<Need[]>([]);
@@ -84,8 +86,18 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-700 to-blue-900 text-white py-16 px-4">
-        <div className="max-w-6xl mx-auto">
+      <section className="relative overflow-hidden text-white py-16 px-4">
+        <img
+          src="/banner-terremoto-choco.webp"
+          alt="Escombros de un edificio colapsado tras el sismo del 10 de agosto de 2026 en Colombia, con personal de la Defensoría del Pueblo en el lugar."
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        {/* Velo azul sobre la foto: mantiene el contraste del texto blanco y
+            los botones, y conserva el tono de marca en vez de taparla del
+            todo. */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-950/92 to-blue-900/90" />
+
+        <div className="relative max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -96,9 +108,13 @@ const HomePage: React.FC = () => {
               </p>
             </div>
             <div className="hidden lg:block">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                <div className="text-4xl font-bold text-yellow-400">{stats.criticalNeeds}</div>
-                <div className="text-sm">Necesidades Críticas</div>
+              {/* Misma regla que la fila de cifras: interlínea cerrada para que
+                  el número y su etiqueta se lean como una sola unidad. */}
+              <div className="rounded-2xl border border-white/20 bg-white/10 px-6 py-5 backdrop-blur-sm">
+                <div className="font-mono text-4xl font-bold leading-none tabular-nums text-amber-300">
+                  {stats.criticalNeeds}
+                </div>
+                <div className="mt-2 text-sm text-white/90">Necesidades críticas</div>
               </div>
             </div>
           </div>
@@ -139,37 +155,35 @@ const HomePage: React.FC = () => {
               Reportar necesidad
             </Link>
           </div>
+
+          <p className="mt-6 text-[11px] text-white/50">
+            Foto: Defensoría del Pueblo, vía{' '}
+            <a
+              href="https://razonpublica.com/sismo-en-la-palma-choco-precedentes-historicos-y-desafios-clave/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white/80"
+            >
+              Razón Pública
+            </a>
+          </p>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-8 px-4 bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <div className="text-center p-4">
-            <div className="text-3xl font-bold text-blue-600">{stats.totalNeeds}</div>
-            <div className="text-sm text-gray-600">Necesidades activas</div>
-          </div>
-          <div className="text-center p-4">
-            <div className="text-3xl font-bold text-red-600">{stats.criticalNeeds}</div>
-            <div className="text-sm text-gray-600">Necesidades críticas</div>
-          </div>
-          <div className="text-center p-4">
-            <div className="text-3xl font-bold text-green-600">{stats.coveredNeeds}</div>
-            <div className="text-sm text-gray-600">Necesidades cubiertas</div>
-          </div>
-          <div className="text-center p-4">
-            <div className="text-3xl font-bold text-purple-600">{stats.totalOffers}</div>
-            <div className="text-sm text-gray-600">Ayudas ofrecidas</div>
-          </div>
-          <div className="text-center p-4">
-            <div className="text-3xl font-bold text-orange-600">{stats.affectedPeople}</div>
-            <div className="text-sm text-gray-600">Personas afectadas</div>
-          </div>
-          <div className="text-center p-4">
-            <div className="text-3xl font-bold text-teal-600">{stats.activeCenters}</div>
-            <div className="text-sm text-gray-600">Centros activos</div>
-          </div>
-        </div>
+      <section className="border-b border-gray-200 bg-white px-4 py-8">
+        {/* Cifras grandes en miles: 5703 se lee mal, 5.703 se lee de un golpe. */}
+        <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-7 md:grid-cols-3 lg:grid-cols-6">
+          <Estadistica valor={stats.totalNeeds} etiqueta="Necesidades activas" />
+          <Estadistica valor={stats.criticalNeeds} etiqueta="Necesidades críticas" tono="alerta" />
+          <Estadistica valor={stats.coveredNeeds} etiqueta="Necesidades cubiertas" />
+          <Estadistica valor={stats.totalOffers} etiqueta="Ayudas ofrecidas" />
+          <Estadistica
+            valor={stats.affectedPeople.toLocaleString('es-CO')}
+            etiqueta="Personas afectadas"
+          />
+          <Estadistica valor={stats.activeCenters} etiqueta="Centros activos" />
+        </dl>
       </section>
 
       {/* Recent Needs */}
@@ -198,10 +212,10 @@ const HomePage: React.FC = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="font-semibold text-lg text-gray-800">{need.product}</h3>
-                          <p className="text-sm text-gray-500">{need.category}</p>
+                          <p className="text-sm text-gray-500">{etiquetaCategoria(need.category)}</p>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getPriorityColor(need.priority)}`}>
-                          {getPriorityIcon(need.priority)} {need.priority.toUpperCase()}
+                          {getPriorityLabel(need.priority)}
                         </div>
                       </div>
                       
@@ -264,7 +278,7 @@ const HomePage: React.FC = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-semibold text-lg">{need.product}</h4>
-                    <p className="text-sm text-gray-600">{need.category}</p>
+                    <p className="text-sm text-gray-600">{etiquetaCategoria(need.category)}</p>
                     {need.municipality && (
                       <p className="text-sm text-gray-500 mt-1">
                         <MapPin className="inline w-4 h-4 mr-1" />

@@ -1,25 +1,51 @@
+import {
+  BedDouble, Brush, Car, Droplet, HeartPulse, Home, Package, Pill,
+  Radio, Shirt, ShowerHead, Utensils, Wrench, Zap, type LucideIcon,
+} from 'lucide-react';
 import { NeedCategory } from '../types';
 
 export const APP_NAME = 'AyudaMapa';
 export const APP_DESCRIPTION = 'Plataforma de coordinación y distribución de ayudas humanitarias';
 export const APP_URL = import.meta.env.VITE_APP_URL || 'http://localhost:3000';
 
-export const NEED_CATEGORIES: { value: NeedCategory; label: string; icon: string; color: string }[] = [
-  { value: 'water', label: 'Agua', icon: '💧', color: '#3B82F6' },
-  { value: 'food', label: 'Alimentos', icon: '🍞', color: '#F59E0B' },
-  { value: 'medicines', label: 'Medicamentos', icon: '💊', color: '#EF4444' },
-  { value: 'first_aid', label: 'Primeros Auxilios', icon: '🩹', color: '#EF4444' },
-  { value: 'clothing', label: 'Ropa', icon: '👕', color: '#8B5CF6' },
-  { value: 'mattresses', label: 'Colchonetas', icon: '🛏️', color: '#EC4899' },
-  { value: 'hygiene', label: 'Higiene', icon: '🧼', color: '#14B8A6' },
-  { value: 'cleaning', label: 'Aseo', icon: '🧹', color: '#10B981' },
-  { value: 'housing', label: 'Vivienda', icon: '🏠', color: '#F59E0B' },
-  { value: 'tools', label: 'Herramientas', icon: '🔧', color: '#6B7280' },
-  { value: 'transport', label: 'Transporte', icon: '🚗', color: '#3B82F6' },
-  { value: 'energy', label: 'Energía', icon: '⚡', color: '#F59E0B' },
-  { value: 'communications', label: 'Comunicaciones', icon: '📡', color: '#8B5CF6' },
-  { value: 'other', label: 'Otros', icon: '📦', color: '#6B7280' },
+/**
+ * El icono es un componente de lucide, no un emoji.
+ *
+ * Los emojis los dibuja el sistema operativo: cambian de forma, color y peso
+ * entre Android, iOS y Windows, no heredan el color del texto y no se pueden
+ * alinear con el resto de la interfaz. Toda la navegación del sitio ya usaba
+ * lucide; esto pone las categorías en el mismo sistema.
+ */
+export const NEED_CATEGORIES: { value: NeedCategory; label: string; icon: LucideIcon; color: string }[] = [
+  { value: 'water', label: 'Agua', icon: Droplet, color: '#3B82F6' },
+  { value: 'food', label: 'Alimentos', icon: Utensils, color: '#F59E0B' },
+  { value: 'medicines', label: 'Medicamentos', icon: Pill, color: '#EF4444' },
+  { value: 'first_aid', label: 'Primeros Auxilios', icon: HeartPulse, color: '#EF4444' },
+  { value: 'clothing', label: 'Ropa', icon: Shirt, color: '#8B5CF6' },
+  { value: 'mattresses', label: 'Colchonetas', icon: BedDouble, color: '#EC4899' },
+  { value: 'hygiene', label: 'Higiene', icon: ShowerHead, color: '#14B8A6' },
+  { value: 'cleaning', label: 'Aseo', icon: Brush, color: '#10B981' },
+  { value: 'housing', label: 'Vivienda', icon: Home, color: '#F59E0B' },
+  { value: 'tools', label: 'Herramientas', icon: Wrench, color: '#6B7280' },
+  { value: 'transport', label: 'Transporte', icon: Car, color: '#3B82F6' },
+  { value: 'energy', label: 'Energía', icon: Zap, color: '#F59E0B' },
+  { value: 'communications', label: 'Comunicaciones', icon: Radio, color: '#8B5CF6' },
+  { value: 'other', label: 'Otros', icon: Package, color: '#6B7280' },
 ];
+
+/** Categoría por valor, para no repetir el `find` en cada pantalla. */
+export function categoriaDe(valor: string) {
+  return NEED_CATEGORIES.find(c => c.value === valor);
+}
+
+/**
+ * Nombre en español de una categoría. La base guarda el valor en inglés
+ * ('food', 'first_aid'), que es lo correcto para una columna, pero varias
+ * pantallas lo estaban imprimiendo tal cual en una interfaz en español.
+ */
+export function etiquetaCategoria(valor: string): string {
+  return categoriaDe(valor)?.label ?? valor;
+}
 
 export const PRIORITY_LABELS = {
   critical: 'Crítica',
@@ -37,12 +63,15 @@ export const PRIORITY_COLORS = {
   covered: 'bg-gray-500',
 } as const;
 
-export const PRIORITY_ICONS = {
-  critical: '🔴',
-  high: '🟠',
-  medium: '🟡',
-  low: '🟢',
-  covered: '✅',
+// PRIORITY_ICONS (círculos de emoji) se eliminó: el color de la prioridad ya
+// lo lleva PRIORITY_COLORS y el nombre lo lleva PRIORITY_LABELS.
+
+/** Nombre legible del rol; la base lo guarda en inglés y en minúscula. */
+export const ROLE_LABELS = {
+  admin: 'Administrador',
+  organization: 'Organización',
+  volunteer: 'Voluntario',
+  visitor: 'Visitante',
 } as const;
 
 export const STATUS_LABELS = {

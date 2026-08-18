@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Package, User, Calendar, MapPin, Filter, Search, Plus } from 'lucide-react';
+import { Building2, Calendar, Filter, Heart, MapPin, Package, Plus, Search, User } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { AidOffer } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -179,7 +179,7 @@ const OffersPage: React.FC = () => {
                       )}
                       {offer.organization && (
                         <div className="flex items-center">
-                          <span className="font-medium mr-1">🏢</span>
+                          <Building2 className="mr-1" size={14} aria-hidden="true" />
                           {offer.organization.name}
                         </div>
                       )}

@@ -1,7 +1,7 @@
 import React from 'react';
-import { X, MapPin, Clock, Package, Phone, User } from 'lucide-react';
+import { Building2, CheckCircle, Clock, MapPin, Package, Phone, User, X } from 'lucide-react';
 import Button from '../common/Button';
-import { getPriorityColor, getPriorityIcon } from '../../utils/priorityCalculator';
+import { getPriorityColor, getPriorityLabel } from '../../utils/priorityCalculator';
 
 interface MarkerPopupProps {
   data: any;
@@ -41,7 +41,7 @@ const MarkerPopup: React.FC<MarkerPopupProps> = ({
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-500">Prioridad:</span>
               <span className={`px-2 py-0.5 rounded-full text-xs font-bold text-white ${getPriorityColor(data.priority)}`}>
-                {getPriorityIcon(data.priority)} {data.priority?.toUpperCase()}
+                {getPriorityLabel(data.priority)}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
@@ -64,8 +64,9 @@ const MarkerPopup: React.FC<MarkerPopupProps> = ({
               </div>
             )}
             {data.verification_status === 'verified' && (
-              <div className="text-xs text-green-600 font-medium">
-                ✓ Verificado
+              <div className="flex items-center gap-1 text-xs font-medium text-green-600">
+                <CheckCircle size={12} aria-hidden="true" />
+                Verificado
               </div>
             )}
           </>
@@ -98,7 +99,7 @@ const MarkerPopup: React.FC<MarkerPopupProps> = ({
               </div>
             )}
             <div className="text-xs text-gray-400">
-              {data.status === 'active' ? '🟢 Activo' : data.status === 'temporary' ? '🟡 Temporal' : '🔴 Cerrado'}
+              {data.status === 'active' ? 'Activo' : data.status === 'temporary' ? 'Temporal' : 'Cerrado'}
             </div>
           </>
         )}
@@ -111,12 +112,14 @@ const MarkerPopup: React.FC<MarkerPopupProps> = ({
             </div>
             {data.organization?.name && (
               <div className="flex items-center text-sm text-gray-600">
-                🏢 {data.organization.name}
+                <Building2 className="mr-1" size={14} aria-hidden="true" />
+                {data.organization.name}
               </div>
             )}
             {data.contact_info && (
               <div className="flex items-center text-sm text-gray-600">
-                📞 {data.contact_info}
+                <Phone className="mr-1" size={14} aria-hidden="true" />
+                {data.contact_info}
               </div>
             )}
             <div className="text-xs text-gray-400">

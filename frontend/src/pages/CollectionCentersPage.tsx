@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Phone, Clock, CheckCircle, XCircle, AlertCircle, Plus, Filter, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, CheckCircle, Clock, Home, MapPin, Package, Phone, Search, Stethoscope, Truck, XCircle, type LucideIcon } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { CollectionCenter } from '../types';
-import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import { toast } from 'sonner';
 
@@ -13,7 +12,6 @@ const CollectionCentersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
-  const { isAuthenticated, isAdmin, isOrganization } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,18 +88,18 @@ const CollectionCentersPage: React.FC = () => {
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): LucideIcon => {
     switch (type) {
       case 'collection':
-        return '📦';
+        return Package;
       case 'delivery':
-        return '🚚';
+        return Truck;
       case 'shelter':
-        return '🏠';
+        return Home;
       case 'medical':
-        return '🏥';
+        return Stethoscope;
       default:
-        return '📍';
+        return MapPin;
     }
   };
 
@@ -116,15 +114,11 @@ const CollectionCentersPage: React.FC = () => {
               Encuentra los puntos habilitados para entregar y recibir ayuda
             </p>
           </div>
-          {(isAdmin || isOrganization) && (
-            <Link
-              to="/registrar-centro"
-              className="mt-4 md:mt-0 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg flex items-center"
-            >
-              <Plus className="mr-2" size={20} />
-              Registrar Centro
-            </Link>
-          )}
+          {/* Aquí iba un botón "Registrar Centro" que apuntaba a
+              /registrar-centro. Esa ruta no existe: caía en el comodín del
+              router y devolvía al inicio sin explicar nada, que es peor que
+              no ofrecer el botón. Cuando exista la pantalla, se vuelve a
+              poner envuelto en {(isAdmin || isOrganization) && ...}. */}
         </div>
 
         {/* Search and Filters */}
@@ -172,11 +166,14 @@ const CollectionCentersPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCenters.map((center) => (
-              <div key={center.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="p-6">
+              <div key={center.id} className="flex flex-col overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg">
+                <div className="flex flex-1 flex-col p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      <span className="text-2xl">{getTypeIcon(center.type)}</span>
+                      {(() => {
+                        const IconoTipo = getTypeIcon(center.type);
+                        return <IconoTipo className="text-gray-500" size={22} strokeWidth={1.75} aria-hidden="true" />;
+                      })()}
                       <h3 className="font-bold text-gray-800">{center.name}</h3>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${
@@ -189,7 +186,7 @@ const CollectionCentersPage: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="space-y-2 text-sm">
+                  <div className="flex-1 space-y-2 text-sm">
                     <div className="flex items-start text-gray-600">
                       <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
                       <span>

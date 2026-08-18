@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -12,6 +12,10 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Si llegamos aquí redirigidos desde una ruta protegida, volvemos
+  // exactamente ahí en vez de mandar siempre al inicio.
+  const destino = (location.state as { from?: Location })?.from;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +24,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await signIn(email, password);
-      navigate('/');
+      navigate(destino ? `${destino.pathname}${destino.search}` : '/', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
     } finally {
@@ -113,7 +117,7 @@ const LoginPage: React.FC = () => {
 
           <p className="text-center text-sm text-gray-600">
             ¿No tienes una cuenta?{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/register" state={location.state} className="font-medium text-blue-600 hover:text-blue-500">
               Regístrate aquí
             </Link>
           </p>

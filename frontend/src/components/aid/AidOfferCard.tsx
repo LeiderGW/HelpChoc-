@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Package, User, Calendar, MapPin, Heart } from 'lucide-react';
+import { Building2, Calendar, Heart, MapPin, Package, User } from 'lucide-react';
 import { AidOffer } from '../../types';
 import { formatDate, formatRelativeTime } from '../../utils/formatters';
 import Badge from '../common/Badge';
@@ -89,7 +89,7 @@ const AidOfferCard: React.FC<AidOfferCardProps> = ({
             )}
             {offer.organization && (
               <div className="flex items-center">
-                <span className="mr-1">🏢</span>
+                <Building2 className="mr-1" size={14} aria-hidden="true" />
                 <span>{offer.organization.name}</span>
               </div>
             )}

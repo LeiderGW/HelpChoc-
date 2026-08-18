@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, TrendingUp } from 'lucide-react';
 import { Need } from '../../types';
-import { getPriorityColor, getPriorityIcon } from '../../utils/priorityCalculator';
+import { getPriorityColor, getPriorityLabel } from '../../utils/priorityCalculator';
 import Badge from '../common/Badge';
+import { etiquetaCategoria } from '../../lib/constants';
 
 interface TopNeedsProps {
   needs: (Need & { pending: number })[];
@@ -26,7 +27,7 @@ const TopNeeds: React.FC<TopNeedsProps> = ({
   if (sortedNeeds.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-md p-6 text-center">
-        <div className="text-4xl mb-3">🎉</div>
+        <CheckCircle2 className="mx-auto mb-3 text-green-500" size={40} strokeWidth={1.5} aria-hidden="true" />
         <p className="text-gray-500 font-medium">¡Todas las necesidades están cubiertas!</p>
         <p className="text-sm text-gray-400 mt-1">No hay necesidades pendientes en este momento</p>
       </div>
@@ -94,13 +95,13 @@ const TopNeeds: React.FC<TopNeedsProps> = ({
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-500">{need.category}</td>
+                  <td className="py-3 px-4 text-sm text-gray-500">{etiquetaCategoria(need.category)}</td>
                   <td className="py-3 px-4 font-medium text-red-600">
                     {need.pending} {need.unit}
                   </td>
                   <td className="py-3 px-4">
                     <Badge variant={need.priority as any} size="sm">
-                      {getPriorityIcon(need.priority)} {need.priority.toUpperCase()}
+                      {getPriorityLabel(need.priority)}
                     </Badge>
                   </td>
                   <td className="py-3 px-4">
@@ -121,9 +122,10 @@ const TopNeeds: React.FC<TopNeedsProps> = ({
                   <td className="py-3 px-4">
                     <Link
                       to={`/necesidades/${need.id}`}
-                      className="text-sm text-blue-600 hover:underline font-medium"
+                      className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:underline"
                     >
-                      Ayudar →
+                      Ayudar
+                      <ArrowRight size={14} aria-hidden="true" />
                     </Link>
                   </td>
                 </tr>
