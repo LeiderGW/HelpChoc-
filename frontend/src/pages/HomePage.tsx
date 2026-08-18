@@ -108,13 +108,14 @@ const HomePage: React.FC = () => {
               </p>
             </div>
             <div className="hidden lg:block">
-              {/* Misma regla que la fila de cifras: interlínea cerrada para que
-                  el número y su etiqueta se lean como una sola unidad. */}
-              <div className="rounded-2xl border border-white/20 bg-white/10 px-6 py-5 backdrop-blur-sm">
-                <div className="font-mono text-4xl font-bold leading-none tabular-nums text-amber-300">
+              {/* La etiqueta es mucho más ancha que la cifra: alineadas a la
+                  izquierda, el número quedaba solo en una esquina con un hueco
+                  al lado. Centrado sobre su etiqueta, el par se lee junto. */}
+              <div className="rounded-2xl border border-white/20 bg-white/10 px-6 py-5 text-center backdrop-blur-sm">
+                <div className="font-mono text-[40px] font-bold leading-none tabular-nums text-amber-300">
                   {stats.criticalNeeds}
                 </div>
-                <div className="mt-2 text-sm text-white/90">Necesidades críticas</div>
+                <div className="mt-2 text-sm leading-snug text-white/90">Necesidades críticas</div>
               </div>
             </div>
           </div>
